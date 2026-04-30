@@ -8,15 +8,23 @@
   <meta name="theme-color" content="#0f172a">
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./style.css?v=2">
+  <link rel="stylesheet" href="./style.css?v=3">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
+  <noscript>
+    <div style="padding:16px;background:#fee2e2;color:#991b1b;font-weight:700;text-align:center;">
+      ระบบนี้ต้องเปิดใช้งาน JavaScript ก่อนจึงจะสามารถใช้งานได้
+    </div>
+  </noscript>
+
   <div class="pageShell">
 
-    <!-- CONSENT SCREEN -->
+    <!-- =====================================================
+      CONSENT SCREEN
+    ====================================================== -->
     <section id="consentScreen" class="consentScreen">
       <div class="consentCard">
 
@@ -29,6 +37,7 @@
         </div>
 
         <h1>หนังสือให้ความยินยอมในการจัดเก็บข้อมูล</h1>
+
         <p class="consentSubtitle">
           สำหรับระบบลงทะเบียนรถยนต์ / รถจักรยานยนต์
         </p>
@@ -56,7 +65,7 @@
           </p>
         </div>
 
-        <label class="consentCheckRow">
+        <label class="consentCheckRow" for="consentCheck">
           <input id="consentCheck" type="checkbox">
           <span>
             ข้าพเจ้าอ่านและยินยอมให้จัดเก็บ ใช้ และประมวลผลข้อมูลส่วนบุคคลและข้อมูลรถยนต์ตามรายละเอียดข้างต้น
@@ -70,13 +79,17 @@
         </div>
 
         <p class="consentVersion">
-          Consent Version: <span id="consentVersionText">PDPA-VEHICLE-REG-001</span>
+          Consent Version:
+          <span id="consentVersionText">PDPA-VEHICLE-REG-001</span>
         </p>
+
       </div>
     </section>
 
 
-    <!-- APP SCREEN -->
+    <!-- =====================================================
+      APP SCREEN
+    ====================================================== -->
     <section id="appScreen" class="appScreen hidden">
 
       <!-- HEADER -->
@@ -100,11 +113,14 @@
         </div>
       </header>
 
-      <!-- MAIN CARD -->
+
+      <!-- MAIN FORM -->
       <main class="mainCard">
         <form id="vehicleForm" class="vehicleForm" autocomplete="off" novalidate>
 
-          <!-- PERSON / ORGANIZATION -->
+          <!-- =====================================================
+            AREA / ORGANIZATION
+          ====================================================== -->
           <section class="formSection">
             <div class="sectionHeader">
               <h2>ข้อมูลพื้นที่ / หน่วยงาน</h2>
@@ -116,9 +132,16 @@
               <!-- DC -->
               <div class="fieldGroup">
                 <label for="dc">DC <span class="required">*</span></label>
-                <select id="dc" name="dc" data-option-key="dc" data-other-target="dcOther" required>
+                <select
+                  id="dc"
+                  name="dc"
+                  data-option-key="dc"
+                  data-other-target="dcOther"
+                  required
+                >
                   <option value="">กำลังโหลดข้อมูล...</option>
                 </select>
+
                 <input
                   id="dcOther"
                   name="dcOther"
@@ -131,9 +154,16 @@
               <!-- Department -->
               <div class="fieldGroup">
                 <label for="department">แผนก <span class="required">*</span></label>
-                <select id="department" name="department" data-option-key="department" data-other-target="departmentOther" required>
+                <select
+                  id="department"
+                  name="department"
+                  data-option-key="department"
+                  data-other-target="departmentOther"
+                  required
+                >
                   <option value="">กำลังโหลดข้อมูล...</option>
                 </select>
+
                 <input
                   id="departmentOther"
                   name="departmentOther"
@@ -146,9 +176,16 @@
               <!-- Company -->
               <div class="fieldGroup">
                 <label for="company">บริษัท <span class="required">*</span></label>
-                <select id="company" name="company" data-option-key="company" data-other-target="companyOther" required>
+                <select
+                  id="company"
+                  name="company"
+                  data-option-key="company"
+                  data-other-target="companyOther"
+                  required
+                >
                   <option value="">กำลังโหลดข้อมูล...</option>
                 </select>
+
                 <input
                   id="companyOther"
                   name="companyOther"
@@ -161,7 +198,10 @@
             </div>
           </section>
 
-          <!-- PERSON -->
+
+          <!-- =====================================================
+            PERSON
+          ====================================================== -->
           <section class="formSection">
             <div class="sectionHeader">
               <h2>ข้อมูลผู้ลงทะเบียน</h2>
@@ -214,7 +254,10 @@
             </div>
           </section>
 
-          <!-- VEHICLES -->
+
+          <!-- =====================================================
+            VEHICLES
+          ====================================================== -->
           <section class="formSection">
             <div class="sectionHeader vehicleSectionTop">
               <div>
@@ -233,7 +276,10 @@
             </div>
           </section>
 
-          <!-- ACTIONS -->
+
+          <!-- =====================================================
+            ACTIONS
+          ====================================================== -->
           <section class="formActions">
             <button id="resetBtn" class="btn btnSecondary" type="button">
               ล้างข้อมูล
@@ -249,19 +295,23 @@
 
       <footer class="appFooter">
         <span>Vehicle Registration System</span>
-        <span id="appVersion">v2.0.0</span>
+        <span id="appVersion">v3.0.0</span>
       </footer>
     </section>
 
   </div>
 
 
-  <!-- CAMERA MODAL -->
+  <!-- =====================================================
+    CAMERA MODAL
+  ====================================================== -->
   <div id="cameraModal" class="cameraModal hidden" aria-hidden="true">
     <div class="cameraPanel">
       <div class="cameraHeader">
         <h3>ถ่ายภาพ</h3>
-        <button id="closeCameraBtn" class="iconButton" type="button" aria-label="ปิดกล้อง">×</button>
+        <button id="closeCameraBtn" class="iconButton" type="button" aria-label="ปิดกล้อง">
+          ×
+        </button>
       </div>
 
       <div class="cameraBody">
@@ -282,7 +332,9 @@
   </div>
 
 
-  <!-- VEHICLE CARD TEMPLATE -->
+  <!-- =====================================================
+    VEHICLE CARD TEMPLATE
+  ====================================================== -->
   <template id="vehicleCardTemplate">
     <article class="vehicleCard" data-vehicle-id="">
       <div class="vehicleCardHeader">
@@ -301,9 +353,15 @@
         <!-- Vehicle Type -->
         <div class="fieldGroup">
           <label>ประเภทรถ <span class="required">*</span></label>
-          <select class="vehicleInput vehicleTypeSelect" data-field="vehicleType" data-option-key="vehicleType" required>
+          <select
+            class="vehicleInput vehicleTypeSelect"
+            data-field="vehicleType"
+            data-option-key="vehicleType"
+            required
+          >
             <option value="">กำลังโหลดข้อมูล...</option>
           </select>
+
           <input
             class="otherInput vehicleOtherInput hidden"
             data-field="vehicleTypeOther"
@@ -315,9 +373,15 @@
         <!-- Brand -->
         <div class="fieldGroup">
           <label>ยี่ห้อรถ <span class="required">*</span></label>
-          <select class="vehicleInput brandSelect" data-field="brand" data-option-key="brand" required>
+          <select
+            class="vehicleInput brandSelect"
+            data-field="brand"
+            data-option-key="brand"
+            required
+          >
             <option value="">กำลังโหลดข้อมูล...</option>
           </select>
+
           <input
             class="otherInput vehicleOtherInput hidden"
             data-field="brandOther"
@@ -329,9 +393,15 @@
         <!-- Car Color -->
         <div class="fieldGroup">
           <label>สีรถ <span class="required">*</span></label>
-          <select class="vehicleInput carColorSelect" data-field="carColor" data-option-key="carColor" required>
+          <select
+            class="vehicleInput carColorSelect"
+            data-field="carColor"
+            data-option-key="carColor"
+            required
+          >
             <option value="">กำลังโหลดข้อมูล...</option>
           </select>
+
           <input
             class="otherInput vehicleOtherInput hidden"
             data-field="carColorOther"
@@ -352,15 +422,23 @@
             maxlength="20"
             required
           >
-          <small class="fieldHint">กรอกได้เฉพาะตัวเลขและอักษรไทยเท่านั้น ห้ามเว้นวรรคหรืออักขระพิเศษ</small>
+          <small class="fieldHint">
+            กรอกได้เฉพาะตัวเลขและอักษรไทยเท่านั้น ห้ามเว้นวรรคหรืออักขระพิเศษ
+          </small>
         </div>
 
         <!-- Province -->
         <div class="fieldGroup">
           <label>หมวดจังหวัด <span class="required">*</span></label>
-          <select class="vehicleInput provinceSelect" data-field="province" data-option-key="province" required>
+          <select
+            class="vehicleInput provinceSelect"
+            data-field="province"
+            data-option-key="province"
+            required
+          >
             <option value="">กำลังโหลดข้อมูล...</option>
           </select>
+
           <input
             class="otherInput vehicleOtherInput hidden"
             data-field="provinceOther"
@@ -371,7 +449,7 @@
 
       </div>
 
-      <!-- VEHICLE IMAGES -->
+      <!-- Vehicle Images -->
       <div class="vehicleImageBlock">
         <div class="subSectionHeader">
           <div>
@@ -390,7 +468,7 @@
         </div>
       </div>
 
-      <!-- BOOK IMAGE -->
+      <!-- Book Image -->
       <div class="vehicleImageBlock bookImageBlock">
         <div class="subSectionHeader">
           <div>
@@ -407,7 +485,9 @@
   </template>
 
 
-  <!-- IMAGE ITEM TEMPLATE -->
+  <!-- =====================================================
+    VEHICLE IMAGE ITEM TEMPLATE
+  ====================================================== -->
   <template id="imageItemTemplate">
     <div class="imageItem" data-image-id="">
       <div class="imagePreviewBox">
@@ -442,7 +522,9 @@
   </template>
 
 
-  <!-- BOOK IMAGE ITEM TEMPLATE -->
+  <!-- =====================================================
+    BOOK IMAGE ITEM TEMPLATE
+  ====================================================== -->
   <template id="bookImageItemTemplate">
     <div class="imageItem bookImageItem" data-image-id="">
       <div class="imagePreviewBox">
