@@ -1528,10 +1528,19 @@ async function handleSubmit(event) {
 
     validatePdfResult(result);
 
+    /*
+     * สำคัญมาก:
+     * ต้องปิด loading ก่อนแสดง SweetAlert success
+     * ไม่อย่างนั้น loadingOverlay จะบัง SweetAlert แล้วดูเหมือนระบบค้าง
+     */
+    hideLoading();
+
     await showSaveSuccess(result);
     resetFormAfterSave();
 
   } catch (err) {
+    hideLoading();
+
     await Swal.fire({
       icon: "error",
       title: "ไม่สามารถบันทึกข้อมูลได้ครบถ้วน",
