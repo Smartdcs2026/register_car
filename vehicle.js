@@ -437,40 +437,74 @@ function formatDisplayDateTime(value) {
 
   if (!text) return "";
 
-  // dd/MM/yyyy HH:mm:ss อยู่แล้ว
-  if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(text)) {
+  const pad = function (n) {
+    return String(n).padStart(2, "0");
+  };
+
+  /*
+   * รูปแบบมาตรฐานที่ระบบต้องการ: dd/MM/yyyy HH:mm:ss
+   * ถ้าเข้ามาเป็นแบบนี้อยู่แล้ว ให้คืนค่าเดิมทันที
+   * ห้ามนำไป new Date() เพราะ browser อาจตีความเป็น MM/dd/yyyy
+   */
+  const ddmmyyyy = text.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/);
+  if (ddmmyyyy) {
     return text;
   }
 
-  // ISO string เช่น 2026-01-04T18:11:36.000Z
-  if (/^\d{4}-\d{2}-\d{2}T/.test(text)) {
-    const d = new Date(text);
+  /*
+   * กรณีข้อมูลเก่าหรือ Google Sheet ส่งมาเป็น MM/dd/yyyy HH:mm:ss
+   * เช่น 04/01/2026 แต่ข้อมูลจริงควรเป็น 01/04/2026
+   * ให้สลับกลับเป็น dd/MM/yyyy
+   */
+  const slashDate = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (slashDate) {
+    const first = Number(slashDate[1]);
+    const second = Number(slashDate[2]);
+    const year = slashDate[3];
 
-    if (!isNaN(d.getTime())) {
-      const pad = function (n) {
-        return String(n).padStart(2, "0");
-      };
+    const hh = pad(slashDate[4] || "00");
+    const mm = pad(slashDate[5] || "00");
+    const ss = pad(slashDate[6] || "00");
 
-      return [
-        pad(d.getDate()),
-        "/",
-        pad(d.getMonth() + 1),
-        "/",
-        d.getFullYear(),
-        " ",
-        pad(d.getHours()),
-        ":",
-        pad(d.getMinutes()),
-        ":",
-        pad(d.getSeconds())
-      ].join("");
+    /*
+     * ถ้าค่าแรกมากกว่า 12 = เป็นวันแน่นอน เช่น 25/04/2026
+     * ถ้าค่าที่สองมากกว่า 12 = เป็นเดือน/วันแน่นอน เช่น 04/25/2026
+     * ถ้าทั้งคู่ <= 12 และระบบเจอปัญหาสลับวันเดือน ให้ถือว่าค่าแรกคือเดือน ค่าที่สองคือวัน
+     */
+    if (first > 12 && second <= 12) {
+      return pad(first) + "/" + pad(second) + "/" + year + " " + hh + ":" + mm + ":" + ss;
     }
+
+    if (second > 12 && first <= 12) {
+      return pad(second) + "/" + pad(first) + "/" + year + " " + hh + ":" + mm + ":" + ss;
+    }
+
+    return pad(second) + "/" + pad(first) + "/" + year + " " + hh + ":" + mm + ":" + ss;
   }
 
-  // yyyy-MM-dd HH:mm:ss
-  const m = text.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
-  if (m) {
-    return m[3] + "/" + m[2] + "/" + m[1] + " " + m[4] + ":" + m[5] + ":" + m[6];
+  /*
+   * ISO จาก Google Sheet เช่น 2026-01-04T18:11:36.000Z
+   * กรณีนี้มักเกิดจาก Sheet แปลง 01/04/2026 เป็น Date แบบ US แล้วส่งออกมาเป็น 2026-01-04
+   * ดังนั้นให้สลับ month/day กลับ เพื่อให้ได้ 01/04/2026
+   */
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+  if (iso) {
+    const year = iso[1];
+    const monthFromIso = iso[2];
+    const dayFromIso = iso[3];
+    const hh = iso[4];
+    const mm = iso[5];
+    const ss = iso[6];
+
+    return dayFromIso + "/" + monthFromIso + "/" + year + " " + hh + ":" + mm + ":" + ss;
+  }
+
+  /*
+   * yyyy-MM-dd HH:mm:ss
+   */
+  const ymd = text.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
+  if (ymd) {
+    return ymd[3] + "/" + ymd[2] + "/" + ymd[1] + " " + ymd[4] + ":" + ymd[5] + ":" + ymd[6];
   }
 
   return text;
