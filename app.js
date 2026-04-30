@@ -1651,16 +1651,10 @@ function buildSaveSuccessHtml(result) {
   const employeeId = pickFirstValue(result.employeeId, result.person && result.person.employeeId);
   const department = pickFirstValue(result.department, result.person && result.person.department);
   const company = pickFirstValue(result.company, result.person && result.person.company);
-  const phone = pickFirstValue(result.phone, result.person && result.person.phone);
-
-  const pdfStatusHtml = buildStatusBadgeHtml(result.pdfStatus);
-  const emailStatusHtml = buildStatusBadgeHtml(result.emailStatus);
-
-  const pdfMessage = buildPdfStatusMessage(result);
-  const emailMessage = buildEmailStatusMessage(result);
 
   const vehicleHtml = vehicles.map(function (vehicle) {
     const stickerLabel = pickFirstValue(vehicle.stickerLabel, vehicle.stickerNo);
+
     const plateText = [
       pickFirstValue(vehicle.plateNumber),
       pickFirstValue(vehicle.province)
@@ -1687,7 +1681,7 @@ function buildSaveSuccessHtml(result) {
     '<div class="saveResultWrap">',
 
       '<div class="saveResultSummary">',
-        '<h4>ข้อมูลถูกบันทึกเข้าระบบเรียบร้อยแล้ว</h4>',
+        '<h4>บันทึกข้อมูลสำเร็จ</h4>',
 
         '<div class="vehicleDetailGrid">',
           detailRowHtml("Registration ID", result.registrationId || "-"),
@@ -1697,21 +1691,7 @@ function buildSaveSuccessHtml(result) {
           detailRowHtml("รหัสพนักงาน", employeeId || "-"),
           detailRowHtml("แผนก", department || "-"),
           detailRowHtml("บริษัท", company || "-"),
-          detailRowHtml("เบอร์โทร", phone || "-"),
           detailRowHtml("จำนวนรถที่บันทึก", (result.vehicleCount || vehicles.length || "-") + " คัน"),
-        '</div>',
-
-        '<div style="margin-top:14px;padding:12px;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:14px;">',
-          '<p style="margin:0 0 8px;"><b>สถานะเอกสาร PDF:</b> ', pdfStatusHtml, '</p>',
-          '<p style="margin:0;color:#166534;font-weight:700;">', escapeHtml(pdfMessage), '</p>',
-        '</div>',
-
-        '<div style="margin-top:12px;padding:12px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:14px;">',
-          '<p style="margin:0 0 8px;"><b>สถานะการส่ง Email:</b> ', emailStatusHtml, '</p>',
-          '<p style="margin:0;color:#334155;font-weight:700;">', escapeHtml(emailMessage), '</p>',
-          result.emailSentAt
-            ? '<p style="margin:8px 0 0;color:#64748b;"><b>เวลาส่ง Email:</b> ' + escapeHtml(result.emailSentAt) + '</p>'
-            : '',
         '</div>',
       '</div>',
 
@@ -1720,8 +1700,7 @@ function buildSaveSuccessHtml(result) {
       '</div>',
 
       '<p style="margin-top:12px;color:#475569;font-weight:700;line-height:1.55;">',
-        'ระบบจะแจ้งเอกสาร PDF ไปยัง Email ของผู้เกี่ยวข้องตาม DC ที่กำหนดไว้ในชีท Email เท่านั้น ',
-        'ผู้ใช้งานทั่วไปจะไม่เห็นลิงก์ PDF, QR Code URL หรือ PIN หลังบันทึก',
+        'ระบบบันทึกข้อมูลรถเรียบร้อยแล้ว',
       '</p>',
 
     '</div>'
