@@ -11,12 +11,14 @@
 
   <style>
     :root {
-      --bg: #f1f5f9;
+      --bg: #eef2f7;
       --card: #ffffff;
       --text: #0f172a;
       --muted: #64748b;
       --border: #e2e8f0;
+      --soft: #f8fafc;
       --primary: #2563eb;
+      --primary-dark: #1d4ed8;
       --danger-bg: #fef2f2;
       --danger-border: #fecaca;
       --danger-text: #991b1b;
@@ -29,52 +31,65 @@
       box-sizing: border-box;
     }
 
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 32%),
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 30%),
         var(--bg);
       color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
+    button,
+    input {
+      font: inherit;
+    }
+
     .verifyShell {
-      width: min(940px, calc(100% - 28px));
+      width: min(940px, calc(100% - 24px));
       margin: 0 auto;
-      padding: 20px 0 36px;
+      padding: 16px 0 28px;
     }
 
     .verifyCard {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 24px;
-      box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
+      border-radius: 22px;
+      box-shadow: 0 18px 48px rgba(15, 23, 42, 0.11);
       overflow: hidden;
     }
 
     .verifyHeader {
       display: flex;
-      gap: 14px;
+      gap: 12px;
       align-items: center;
-      padding: 18px 20px;
+      padding: 16px 18px;
       background: linear-gradient(135deg, #0f172a, #1e293b);
       color: #ffffff;
     }
 
     .verifyLogo {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
+      width: 52px;
+      height: 52px;
+      border-radius: 15px;
       object-fit: contain;
       background: #ffffff;
       padding: 6px;
       flex: 0 0 auto;
     }
 
+    .verifyHeaderText {
+      min-width: 0;
+    }
+
     .verifyHeader h1 {
       margin: 0;
-      font-size: 1.28rem;
+      font-size: 1.18rem;
       line-height: 1.25;
       font-weight: 950;
     }
@@ -82,36 +97,38 @@
     .verifyHeader p {
       margin: 4px 0 0;
       color: #cbd5e1;
-      font-size: 0.94rem;
-      line-height: 1.45;
+      font-size: 0.9rem;
+      line-height: 1.35;
     }
 
     .verifyBody {
-      padding: 20px;
+      padding: 18px;
     }
 
     .pinBoxPanel {
       border: 1px solid var(--border);
       border-radius: 18px;
-      background: #f8fafc;
-      padding: 18px;
+      background: var(--soft);
+      padding: 16px;
     }
 
     .pinBoxPanel h2 {
-      margin: 0 0 8px;
-      font-size: 1.12rem;
+      margin: 0 0 6px;
+      font-size: 1.06rem;
       font-weight: 950;
+      line-height: 1.25;
     }
 
     .pinBoxPanel p {
-      margin: 0 0 14px;
+      margin: 0 0 12px;
       color: var(--muted);
-      line-height: 1.55;
+      line-height: 1.45;
+      font-size: 0.94rem;
     }
 
     .pinForm {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 10px;
       align-items: end;
     }
@@ -120,14 +137,15 @@
       display: block;
       font-weight: 900;
       margin-bottom: 6px;
+      font-size: 0.92rem;
     }
 
     .pinForm input {
       width: 100%;
       border: 1px solid #cbd5e1;
       border-radius: 14px;
-      padding: 13px 14px;
-      font-size: 1.3rem;
+      padding: 12px 14px;
+      font-size: 1.22rem;
       font-weight: 950;
       letter-spacing: 5px;
       text-align: center;
@@ -143,17 +161,18 @@
     .verifyBtn {
       border: 0;
       border-radius: 14px;
-      padding: 15px 18px;
+      padding: 13px 18px;
       background: var(--primary);
       color: #ffffff;
       font-weight: 950;
       cursor: pointer;
-      min-width: 132px;
-      transition: transform 0.12s ease, opacity 0.12s ease;
+      min-width: 124px;
+      transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
     }
 
     .verifyBtn:hover:not(:disabled) {
       transform: translateY(-1px);
+      background: var(--primary-dark);
     }
 
     .verifyBtn:disabled {
@@ -163,14 +182,15 @@
 
     .errorBox {
       display: none;
-      margin-top: 14px;
-      padding: 12px 14px;
+      margin-top: 12px;
+      padding: 11px 12px;
       border-radius: 14px;
       background: var(--danger-bg);
       border: 1px solid var(--danger-border);
       color: var(--danger-text);
       font-weight: 850;
-      line-height: 1.55;
+      line-height: 1.45;
+      font-size: 0.94rem;
     }
 
     .errorBox.show {
@@ -178,7 +198,7 @@
     }
 
     .resultPanel {
-      margin-top: 18px;
+      margin-top: 14px;
       display: none;
     }
 
@@ -186,47 +206,62 @@
       display: block;
     }
 
-    .stickerBanner {
-      display: flex;
-      justify-content: space-between;
-      gap: 14px;
-      align-items: center;
-      border: 2px solid #0f172a;
-      border-radius: 18px;
-      padding: 14px;
-      background: #ffffff;
-      margin-bottom: 14px;
+    .summaryTop {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 230px;
+      gap: 12px;
+      align-items: stretch;
+      margin-bottom: 12px;
     }
 
-    .stickerBanner small {
+    .stickerCard {
+      border: 2px solid #0f172a;
+      border-radius: 18px;
+      padding: 13px 14px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .stickerCard small {
       display: block;
       color: var(--muted);
       font-weight: 900;
       margin-bottom: 4px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     .stickerNo {
       font-size: 1.75rem;
       font-weight: 950;
       color: #0f172a;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
+      line-height: 1.1;
+      word-break: break-word;
     }
 
     .plateBoxView {
-      width: 220px;
-      max-width: 100%;
       border: 3px solid #0f172a;
-      border-radius: 16px;
+      border-radius: 18px;
       text-align: center;
       padding: 10px;
       background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 96px;
     }
 
     .plateNoView {
-      font-size: 1.7rem;
+      font-size: 1.68rem;
       font-weight: 950;
       letter-spacing: 1px;
-      line-height: 1.15;
+      line-height: 1.12;
+      word-break: break-word;
     }
 
     .plateProvinceView {
@@ -234,117 +269,262 @@
       margin-top: 6px;
       padding-top: 5px;
       font-weight: 950;
-      line-height: 1.25;
+      line-height: 1.2;
     }
 
-    .detailGrid {
-      display: grid;
-      grid-template-columns: 190px 1fr;
+    .detailCard {
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 18px;
       overflow: hidden;
       background: #ffffff;
     }
 
-    .detailGrid div {
-      padding: 10px 12px;
+    .detailRow {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr);
       border-bottom: 1px solid var(--border);
-      line-height: 1.42;
+      min-height: 42px;
     }
 
-    .detailGrid div:nth-child(odd) {
-      background: #f8fafc;
+    .detailRow:last-child {
+      border-bottom: 0;
+    }
+
+    .detailLabel,
+    .detailValue {
+      padding: 10px 12px;
+      line-height: 1.38;
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .detailLabel {
+      background: var(--soft);
       font-weight: 950;
       color: #334155;
+      border-right: 1px solid var(--border);
     }
 
-    .detailGrid div:nth-last-child(-n+2) {
-      border-bottom: 0;
+    .detailValue {
+      font-weight: 760;
+      color: #0f172a;
+      word-break: break-word;
     }
 
     .statusLine {
       margin-top: 12px;
-      padding: 12px 14px;
+      padding: 11px 12px;
       border-radius: 14px;
       background: var(--success-bg);
       border: 1px solid var(--success-border);
       color: var(--success-text);
       font-weight: 850;
-      line-height: 1.55;
-    }
-
-    .privacyNote {
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      color: #1e40af;
-      font-weight: 750;
-      line-height: 1.55;
+      line-height: 1.45;
       font-size: 0.94rem;
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 700px) {
+      body {
+        background: var(--bg);
+      }
+
       .verifyShell {
-        width: min(100% - 18px, 940px);
-        padding-top: 10px;
+        width: 100%;
+        padding: 0;
+      }
+
+      .verifyCard {
+        min-height: 100vh;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+        box-shadow: none;
       }
 
       .verifyHeader {
-        align-items: flex-start;
-        padding: 16px;
+        padding: 10px 12px;
+        gap: 10px;
       }
 
       .verifyLogo {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        padding: 5px;
       }
 
       .verifyHeader h1 {
-        font-size: 1.08rem;
+        font-size: 1rem;
+        line-height: 1.2;
+      }
+
+      .verifyHeader p {
+        margin-top: 2px;
+        font-size: 0.78rem;
+        line-height: 1.25;
       }
 
       .verifyBody {
-        padding: 14px;
+        padding: 10px;
+      }
+
+      .pinBoxPanel {
+        border-radius: 16px;
+        padding: 11px;
+      }
+
+      .pinBoxPanel h2 {
+        font-size: 0.98rem;
+        margin-bottom: 4px;
+      }
+
+      .pinBoxPanel p {
+        font-size: 0.82rem;
+        margin-bottom: 9px;
+        line-height: 1.35;
       }
 
       .pinForm {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr) 96px;
+        gap: 8px;
+      }
+
+      .pinForm label {
+        font-size: 0.8rem;
+        margin-bottom: 4px;
+      }
+
+      .pinForm input {
+        border-radius: 12px;
+        padding: 10px 10px;
+        font-size: 1.05rem;
+        letter-spacing: 4px;
       }
 
       .verifyBtn {
-        width: 100%;
+        min-width: 0;
+        width: 96px;
+        border-radius: 12px;
+        padding: 11px 8px;
+        font-size: 0.88rem;
       }
 
-      .stickerBanner {
-        flex-direction: column;
-        align-items: stretch;
+      .errorBox {
+        margin-top: 9px;
+        padding: 9px 10px;
+        border-radius: 12px;
+        font-size: 0.84rem;
+      }
+
+      .resultPanel {
+        margin-top: 10px;
+      }
+
+      .summaryTop {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .stickerCard {
+        border-radius: 14px;
+        padding: 9px 10px;
+        min-height: 82px;
+      }
+
+      .stickerCard small {
+        font-size: 0.68rem;
+        margin-bottom: 3px;
+      }
+
+      .stickerNo {
+        font-size: clamp(1.1rem, 5.2vw, 1.45rem);
+        line-height: 1.08;
       }
 
       .plateBoxView {
-        width: auto;
+        border-radius: 14px;
+        padding: 8px 7px;
+        min-height: 82px;
       }
 
-      .detailGrid {
-        grid-template-columns: 1fr;
+      .plateNoView {
+        font-size: clamp(1.08rem, 5.2vw, 1.45rem);
+        line-height: 1.08;
       }
 
-      .detailGrid div:nth-child(odd) {
-        border-bottom: 0;
-        padding-bottom: 4px;
-      }
-
-      .detailGrid div:nth-child(even) {
+      .plateProvinceView {
+        margin-top: 5px;
         padding-top: 4px;
+        font-size: 0.86rem;
       }
 
-      .detailGrid div:nth-last-child(-n+2) {
-        border-bottom: 1px solid var(--border);
+      .detailCard {
+        border-radius: 15px;
       }
 
-      .detailGrid div:last-child {
-        border-bottom: 0;
+      .detailRow {
+        grid-template-columns: 96px minmax(0, 1fr);
+        min-height: 34px;
+      }
+
+      .detailLabel,
+      .detailValue {
+        padding: 7px 8px;
+        font-size: 0.86rem;
+        line-height: 1.25;
+      }
+
+      .detailLabel {
+        font-weight: 920;
+      }
+
+      .statusLine {
+        margin-top: 8px;
+        padding: 9px 10px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        line-height: 1.35;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .verifyHeader h1 {
+        font-size: 0.94rem;
+      }
+
+      .verifyHeader p {
+        font-size: 0.74rem;
+      }
+
+      .pinForm {
+        grid-template-columns: minmax(0, 1fr) 88px;
+      }
+
+      .verifyBtn {
+        width: 88px;
+        font-size: 0.82rem;
+      }
+
+      .summaryTop {
+        gap: 6px;
+      }
+
+      .stickerCard,
+      .plateBoxView {
+        min-height: 76px;
+        padding: 7px;
+      }
+
+      .detailRow {
+        grid-template-columns: 88px minmax(0, 1fr);
+      }
+
+      .detailLabel,
+      .detailValue {
+        padding: 6px 7px;
+        font-size: 0.82rem;
       }
     }
   </style>
@@ -360,9 +540,9 @@
           alt="Company Logo"
         >
 
-        <div>
+        <div class="verifyHeaderText">
           <h1>ตรวจสอบข้อมูลรถจาก QR Code</h1>
-          <p>กรุณากรอก PIN 6 หลักที่ได้รับจากผู้เกี่ยวข้อง</p>
+          <p>กรอก PIN 6 หลักเพื่อเปิดข้อมูลรถ</p>
         </div>
       </header>
 
@@ -370,8 +550,7 @@
         <section class="pinBoxPanel">
           <h2>ยืนยันสิทธิ์เข้าถึงข้อมูลรถ</h2>
           <p>
-            ข้อมูลรถถูกจำกัดการเข้าถึงสำหรับผู้เกี่ยวข้องเท่านั้น
-            กรุณากรอก PIN เพื่อเปิดข้อมูลรถ
+            ข้อมูลนี้จำกัดเฉพาะผู้เกี่ยวข้อง กรุณากรอก PIN เพื่อเปิดข้อมูลรถ
           </p>
 
           <form id="pinForm" class="pinForm" autocomplete="off">
@@ -397,8 +576,8 @@
         </section>
 
         <section id="resultPanel" class="resultPanel">
-          <div class="stickerBanner">
-            <div>
+          <div class="summaryTop">
+            <div class="stickerCard">
               <small>Sticker No.</small>
               <div id="stickerNo" class="stickerNo">-</div>
             </div>
@@ -409,41 +588,55 @@
             </div>
           </div>
 
-          <div class="detailGrid">
-            <div>DC</div>
-            <div id="dc">-</div>
+          <div class="detailCard">
+            <div class="detailRow">
+              <div class="detailLabel">DC</div>
+              <div id="dc" class="detailValue">-</div>
+            </div>
 
-            <div>ชื่อ-นามสกุล</div>
-            <div id="fullName">-</div>
+            <div class="detailRow">
+              <div class="detailLabel">ชื่อ</div>
+              <div id="fullName" class="detailValue">-</div>
+            </div>
 
-            <div>รหัสพนักงาน</div>
-            <div id="employeeId">-</div>
+            <div class="detailRow">
+              <div class="detailLabel">รหัส</div>
+              <div id="employeeId" class="detailValue">-</div>
+            </div>
 
-            <div>แผนก</div>
-            <div id="department">-</div>
+            <div class="detailRow">
+              <div class="detailLabel">แผนก</div>
+              <div id="department" class="detailValue">-</div>
+            </div>
 
-            <div>บริษัท</div>
-            <div id="company">-</div>
+            <div class="detailRow">
+              <div class="detailLabel">บริษัท</div>
+              <div id="company" class="detailValue">-</div>
+            </div>
 
-            <div>ประเภทรถ</div>
-            <div id="vehicleType">-</div>
+            <div class="detailRow">
+              <div class="detailLabel">ประเภทรถ</div>
+              <div id="vehicleType" class="detailValue">-</div>
+            </div>
 
-            <div>ยี่ห้อรถ</div>
-            <div id="brand">-</div>
+            <div class="detailRow">
+              <div class="detailLabel">ยี่ห้อ</div>
+              <div id="brand" class="detailValue">-</div>
+            </div>
 
-            <div>สีรถ</div>
-            <div id="carColor">-</div>
+            <div class="detailRow">
+              <div class="detailLabel">สี</div>
+              <div id="carColor" class="detailValue">-</div>
+            </div>
 
-            <div>สถานะข้อมูล</div>
-            <div id="status">-</div>
+            <div class="detailRow">
+              <div class="detailLabel">สถานะ</div>
+              <div id="status" class="detailValue">-</div>
+            </div>
           </div>
 
           <div class="statusLine">
-            เปิดข้อมูลรถสำเร็จ ข้อมูลนี้ใช้สำหรับตรวจสอบรถตาม Sticker No. และทะเบียนรถเท่านั้น
-          </div>
-
-          <div class="privacyNote">
-            หมายเหตุ: ระบบจะแสดงเฉพาะข้อมูลที่จำเป็นสำหรับตรวจสอบรถ ไม่แสดงไฟล์ PDF, QR URL หรือ PIN
+            เปิดข้อมูลรถสำเร็จ ใช้ตรวจสอบตาม Sticker No. และทะเบียนรถ
           </div>
         </section>
       </div>
