@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0f172a">
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./style.css?v=1">
+  <link rel="stylesheet" href="./style.css?v=2">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -16,266 +16,245 @@
 <body>
   <div class="pageShell">
 
-    <!-- HEADER -->
-    <header class="appHeader">
-      <div class="brandBox">
-        <img
-          class="brandLogo"
-          src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
-          alt="Company Logo"
-        >
+    <!-- CONSENT SCREEN -->
+    <section id="consentScreen" class="consentScreen">
+      <div class="consentCard">
 
-        <div class="brandText">
-          <h1>ระบบลงทะเบียนรถยนต์ / รถมอเตอร์ไซค์</h1>
-          <p>Vehicle Registration System</p>
+        <div class="consentLogoWrap">
+          <img
+            class="consentLogo"
+            src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
+            alt="Company Logo"
+          >
         </div>
+
+        <h1>หนังสือให้ความยินยอมในการจัดเก็บข้อมูล</h1>
+        <p class="consentSubtitle">
+          สำหรับระบบลงทะเบียนรถยนต์ / รถจักรยานยนต์
+        </p>
+
+        <div class="consentTextBox">
+          <p>
+            ข้าพเจ้ายินยอมให้บริษัทหรือหน่วยงานที่เกี่ยวข้อง จัดเก็บ ใช้ และประมวลผลข้อมูลส่วนบุคคล
+            รวมถึงข้อมูลรถยนต์หรือรถจักรยานยนต์ เพื่อวัตถุประสงค์ในการลงทะเบียน ตรวจสอบสิทธิ์
+            ควบคุมการเข้าออกพื้นที่ และการบริหารจัดการด้านความปลอดภัยภายในหน่วยงาน
+          </p>
+
+          <p>
+            ข้อมูลที่อาจถูกจัดเก็บ ได้แก่ ชื่อ-นามสกุล รหัสพนักงาน เบอร์โทร บริษัท แผนก DC
+            หมายเลขทะเบียนรถ จังหวัดทะเบียน ประเภทรถ ยี่ห้อรถ สีรถ รูปภาพรถ
+            ภาพสำเนาทะเบียนรถหรือเล่มรถ วันเวลาที่ลงทะเบียน และข้อมูลที่เกี่ยวข้องกับการตรวจสอบรถ
+          </p>
+
+          <p>
+            ระบบจะสร้างลิงก์และ QR Code เฉพาะรถแต่ละคัน เพื่อใช้ตรวจสอบข้อมูลรถ โดยการเปิดข้อมูลจาก QR Code
+            จะต้องใช้ PIN 6 หลักที่ระบบสร้างให้หลังการบันทึกข้อมูล
+          </p>
+
+          <p>
+            ข้าพเจ้าได้รับทราบและยินยอมให้จัดเก็บ ใช้ และประมวลผลข้อมูลดังกล่าวตามวัตถุประสงค์ข้างต้น
+          </p>
+        </div>
+
+        <label class="consentCheckRow">
+          <input id="consentCheck" type="checkbox">
+          <span>
+            ข้าพเจ้าอ่านและยินยอมให้จัดเก็บ ใช้ และประมวลผลข้อมูลส่วนบุคคลและข้อมูลรถยนต์ตามรายละเอียดข้างต้น
+          </span>
+        </label>
+
+        <div class="consentActions">
+          <button id="acceptConsentBtn" class="btn btnPrimary" type="button" disabled>
+            ยินยอมและเข้าสู่ระบบลงทะเบียน
+          </button>
+        </div>
+
+        <p class="consentVersion">
+          Consent Version: <span id="consentVersionText">PDPA-VEHICLE-REG-001</span>
+        </p>
       </div>
+    </section>
 
-      <div class="apiStatusBox">
-        <span id="apiStatusDot" class="statusDot statusChecking"></span>
-        <span id="apiStatusText">กำลังตรวจสอบระบบ...</span>
-      </div>
-    </header>
 
-    <!-- MAIN CARD -->
-    <main class="mainCard">
-      <form id="vehicleForm" class="vehicleForm" autocomplete="off" novalidate>
+    <!-- APP SCREEN -->
+    <section id="appScreen" class="appScreen hidden">
 
-        <section class="formSection">
-          <div class="sectionHeader">
-            <h2>ข้อมูลพื้นที่ / หน่วยงาน</h2>
-            <p>เลือกข้อมูลจากรายการ หากไม่พบรายการให้เลือก “อื่นๆ” แล้วกรอกเอง</p>
+      <!-- HEADER -->
+      <header class="appHeader">
+        <div class="brandBox">
+          <img
+            class="brandLogo"
+            src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
+            alt="Company Logo"
+          >
+
+          <div class="brandText">
+            <h1>ระบบลงทะเบียนรถยนต์ / รถมอเตอร์ไซค์</h1>
+            <p>Vehicle Registration System</p>
           </div>
+        </div>
 
-          <div class="formGrid">
+        <div class="apiStatusBox">
+          <span id="apiStatusDot" class="statusDot statusChecking"></span>
+          <span id="apiStatusText">กำลังตรวจสอบระบบ...</span>
+        </div>
+      </header>
 
-            <!-- DC -->
-            <div class="fieldGroup">
-              <label for="dc">DC <span class="required">*</span></label>
-              <select id="dc" name="dc" data-option-key="dc" data-other-target="dcOther" required>
-                <option value="">กำลังโหลดข้อมูล...</option>
-              </select>
-              <input
-                id="dcOther"
-                name="dcOther"
-                class="otherInput hidden"
-                type="text"
-                placeholder="กรอก DC อื่นๆ"
-              >
+      <!-- MAIN CARD -->
+      <main class="mainCard">
+        <form id="vehicleForm" class="vehicleForm" autocomplete="off" novalidate>
+
+          <!-- PERSON / ORGANIZATION -->
+          <section class="formSection">
+            <div class="sectionHeader">
+              <h2>ข้อมูลพื้นที่ / หน่วยงาน</h2>
+              <p>เลือกข้อมูลจากรายการ หากไม่พบรายการให้เลือก “อื่นๆ” แล้วกรอกเอง</p>
             </div>
 
-            <!-- Department -->
-            <div class="fieldGroup">
-              <label for="department">แผนก <span class="required">*</span></label>
-              <select id="department" name="department" data-option-key="department" data-other-target="departmentOther" required>
-                <option value="">กำลังโหลดข้อมูล...</option>
-              </select>
-              <input
-                id="departmentOther"
-                name="departmentOther"
-                class="otherInput hidden"
-                type="text"
-                placeholder="กรอกแผนกอื่นๆ"
-              >
+            <div class="formGrid">
+
+              <!-- DC -->
+              <div class="fieldGroup">
+                <label for="dc">DC <span class="required">*</span></label>
+                <select id="dc" name="dc" data-option-key="dc" data-other-target="dcOther" required>
+                  <option value="">กำลังโหลดข้อมูล...</option>
+                </select>
+                <input
+                  id="dcOther"
+                  name="dcOther"
+                  class="otherInput hidden"
+                  type="text"
+                  placeholder="กรอก DC อื่นๆ"
+                >
+              </div>
+
+              <!-- Department -->
+              <div class="fieldGroup">
+                <label for="department">แผนก <span class="required">*</span></label>
+                <select id="department" name="department" data-option-key="department" data-other-target="departmentOther" required>
+                  <option value="">กำลังโหลดข้อมูล...</option>
+                </select>
+                <input
+                  id="departmentOther"
+                  name="departmentOther"
+                  class="otherInput hidden"
+                  type="text"
+                  placeholder="กรอกแผนกอื่นๆ"
+                >
+              </div>
+
+              <!-- Company -->
+              <div class="fieldGroup">
+                <label for="company">บริษัท <span class="required">*</span></label>
+                <select id="company" name="company" data-option-key="company" data-other-target="companyOther" required>
+                  <option value="">กำลังโหลดข้อมูล...</option>
+                </select>
+                <input
+                  id="companyOther"
+                  name="companyOther"
+                  class="otherInput hidden"
+                  type="text"
+                  placeholder="กรอกบริษัทอื่นๆ"
+                >
+              </div>
+
+            </div>
+          </section>
+
+          <!-- PERSON -->
+          <section class="formSection">
+            <div class="sectionHeader">
+              <h2>ข้อมูลผู้ลงทะเบียน</h2>
+              <p>กรอกข้อมูลผู้ลงทะเบียนให้ครบถ้วน ข้อมูลนี้จะใช้ร่วมกับรถทุกคันที่เพิ่มในครั้งนี้</p>
             </div>
 
-            <!-- Company -->
-            <div class="fieldGroup">
-              <label for="company">บริษัท <span class="required">*</span></label>
-              <select id="company" name="company" data-option-key="company" data-other-target="companyOther" required>
-                <option value="">กำลังโหลดข้อมูล...</option>
-              </select>
-              <input
-                id="companyOther"
-                name="companyOther"
-                class="otherInput hidden"
-                type="text"
-                placeholder="กรอกบริษัทอื่นๆ"
-              >
+            <div class="formGrid">
+
+              <!-- Full Name -->
+              <div class="fieldGroup fieldSpan2">
+                <label for="fullName">ชื่อ-นามสกุล <span class="required">*</span></label>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  placeholder="เช่น สมชาย ใจดี"
+                  required
+                >
+              </div>
+
+              <!-- Phone -->
+              <div class="fieldGroup">
+                <label for="phone">เบอร์โทร <span class="required">*</span></label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  inputmode="tel"
+                  placeholder="เช่น 0812345678"
+                  required
+                >
+              </div>
+
+              <!-- Employee ID -->
+              <div class="fieldGroup">
+                <label for="employeeId">รหัสพนักงาน <span class="required">*</span></label>
+                <input
+                  id="employeeId"
+                  name="employeeId"
+                  type="text"
+                  inputmode="latin"
+                  placeholder="เช่น EMP001 หรือ A12345"
+                  maxlength="30"
+                  pattern="[A-Z0-9]+"
+                  required
+                >
+                <small class="fieldHint">กรอกได้เฉพาะ A-Z และ 0-9 เท่านั้น</small>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- VEHICLES -->
+          <section class="formSection">
+            <div class="sectionHeader vehicleSectionTop">
+              <div>
+                <h2>ข้อมูลรถ</h2>
+                <p>เพิ่มรถได้สูงสุด 3 คันต่อการบันทึก รถแต่ละคันต้องแนบภาพสำเนาทะเบียนรถ/เล่มรถ 1 ภาพ</p>
+              </div>
+
+              <button id="addVehicleBtn" class="btn btnSoft" type="button">
+                <span class="btnIcon">+</span>
+                เพิ่มรถ
+              </button>
             </div>
 
-          </div>
-        </section>
-
-        <section class="formSection">
-          <div class="sectionHeader">
-            <h2>ข้อมูลผู้ลงทะเบียน</h2>
-            <p>กรอกข้อมูลผู้ใช้งานหรือเจ้าของรถให้ครบถ้วน</p>
-          </div>
-
-          <div class="formGrid">
-
-            <!-- Full Name -->
-            <div class="fieldGroup fieldSpan2">
-              <label for="fullName">ชื่อ-นามสกุล <span class="required">*</span></label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                placeholder="เช่น สมชาย ใจดี"
-                required
-              >
+            <div id="vehicleList" class="vehicleList">
+              <!-- app.js จะสร้าง vehicle card ตรงนี้ -->
             </div>
+          </section>
 
-            <!-- Phone -->
-            <div class="fieldGroup">
-              <label for="phone">เบอร์โทร <span class="required">*</span></label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                inputmode="tel"
-                placeholder="เช่น 0812345678"
-                required
-              >
-            </div>
-
-            <!-- Employee ID -->
-            <div class="fieldGroup">
-              <label for="employeeId">รหัสพนักงาน <span class="required">*</span></label>
-              <input
-                id="employeeId"
-                name="employeeId"
-                type="text"
-                inputmode="latin"
-                placeholder="เช่น EMP001 หรือ A12345"
-                maxlength="30"
-                pattern="[A-Z0-9]+"
-                required
-              >
-              <small class="fieldHint">กรอกได้เฉพาะ A-Z และ 0-9 เท่านั้น</small>
-            </div>
-
-          </div>
-        </section>
-
-        <section class="formSection">
-          <div class="sectionHeader">
-            <h2>ข้อมูลรถ</h2>
-            <p>ข้อมูลส่วนนี้จะถูกนำไปแสดงเป็นป้ายทะเบียนเพื่อตรวจสอบก่อนบันทึก</p>
-          </div>
-
-          <div class="formGrid">
-
-            <!-- Vehicle Type -->
-            <div class="fieldGroup">
-              <label for="vehicleType">ประเภทรถ <span class="required">*</span></label>
-              <select id="vehicleType" name="vehicleType" data-option-key="vehicleType" data-other-target="vehicleTypeOther" required>
-                <option value="">กำลังโหลดข้อมูล...</option>
-              </select>
-              <input
-                id="vehicleTypeOther"
-                name="vehicleTypeOther"
-                class="otherInput hidden"
-                type="text"
-                placeholder="กรอกประเภทรถอื่นๆ"
-              >
-            </div>
-
-            <!-- Brand -->
-            <div class="fieldGroup">
-              <label for="brand">ยี่ห้อรถ <span class="required">*</span></label>
-              <select id="brand" name="brand" data-option-key="brand" data-other-target="brandOther" required>
-                <option value="">กำลังโหลดข้อมูล...</option>
-              </select>
-              <input
-                id="brandOther"
-                name="brandOther"
-                class="otherInput hidden"
-                type="text"
-                placeholder="กรอกยี่ห้ออื่นๆ"
-              >
-            </div>
-
-            <!-- Car Color -->
-            <div class="fieldGroup">
-              <label for="carColor">สีรถ <span class="required">*</span></label>
-              <select id="carColor" name="carColor" data-option-key="carColor" data-other-target="carColorOther" required>
-                <option value="">กำลังโหลดข้อมูล...</option>
-              </select>
-              <input
-                id="carColorOther"
-                name="carColorOther"
-                class="otherInput hidden"
-                type="text"
-                placeholder="กรอกสีอื่นๆ"
-              >
-            </div>
-
-            <!-- Plate Number -->
-            <div class="fieldGroup">
-              <label for="plateNumber">หมายเลขทะเบียน <span class="required">*</span></label>
-              <input
-                id="plateNumber"
-                name="plateNumber"
-                type="text"
-                inputmode="text"
-                placeholder="เช่น กข1234"
-                maxlength="20"
-                required
-              >
-              <small class="fieldHint">กรอกได้เฉพาะตัวเลขและอักษรไทยเท่านั้น ห้ามเว้นวรรคหรือใส่อักขระพิเศษ</small>
-            </div>
-
-            <!-- Province -->
-            <div class="fieldGroup">
-              <label for="province">หมวดจังหวัด <span class="required">*</span></label>
-              <select id="province" name="province" data-option-key="province" data-other-target="provinceOther" required>
-                <option value="">กำลังโหลดข้อมูล...</option>
-              </select>
-              <input
-                id="provinceOther"
-                name="provinceOther"
-                class="otherInput hidden"
-                type="text"
-                placeholder="กรอกจังหวัดอื่นๆ"
-              >
-            </div>
-
-          </div>
-        </section>
-
-        <section class="formSection">
-          <div class="sectionHeader imageHeader">
-            <div>
-              <h2>รูปภาพประกอบ</h2>
-              <p>สามารถอัปโหลดภาพหรือเปิดกล้องถ่ายภาพได้ สูงสุด 3 ภาพ</p>
-            </div>
-
-            <button id="addImageBtn" class="btn btnSoft" type="button">
-              <span class="btnIcon">+</span>
-              เพิ่มรูป
+          <!-- ACTIONS -->
+          <section class="formActions">
+            <button id="resetBtn" class="btn btnSecondary" type="button">
+              ล้างข้อมูล
             </button>
-          </div>
 
-          <div id="imageList" class="imageList">
-            <!-- app.js จะสร้าง image item ตรงนี้ -->
-          </div>
+            <button id="submitBtn" class="btn btnPrimary" type="submit">
+              ตรวจสอบและบันทึก
+            </button>
+          </section>
 
-          <div class="imageNote">
-            รองรับไฟล์รูปภาพทั่วไป เช่น JPG, PNG, WEBP ระบบจะย่อขนาดภาพก่อนบันทึกเพื่อลดปัญหาส่งข้อมูลขนาดใหญ่
-          </div>
-        </section>
+        </form>
+      </main>
 
-        <section class="formActions">
-          <button id="resetBtn" class="btn btnSecondary" type="button">
-            ล้างข้อมูล
-          </button>
-
-          <button id="submitBtn" class="btn btnPrimary" type="submit">
-            ตรวจสอบและบันทึก
-          </button>
-        </section>
-
-      </form>
-    </main>
-
-    <footer class="appFooter">
-      <span>Vehicle Registration System</span>
-      <span id="appVersion">v1.0.0</span>
-    </footer>
+      <footer class="appFooter">
+        <span>Vehicle Registration System</span>
+        <span id="appVersion">v2.0.0</span>
+      </footer>
+    </section>
 
   </div>
+
 
   <!-- CAMERA MODAL -->
   <div id="cameraModal" class="cameraModal hidden" aria-hidden="true">
@@ -302,9 +281,135 @@
     </div>
   </div>
 
+
+  <!-- VEHICLE CARD TEMPLATE -->
+  <template id="vehicleCardTemplate">
+    <article class="vehicleCard" data-vehicle-id="">
+      <div class="vehicleCardHeader">
+        <div>
+          <h3 class="vehicleCardTitle">รถคันที่ 1</h3>
+          <p class="vehicleCardSubtitle">กรอกข้อมูลรถและแนบรูปภาพให้ครบถ้วน</p>
+        </div>
+
+        <button class="btn btnDanger removeVehicleBtn" type="button">
+          ลบรถ
+        </button>
+      </div>
+
+      <div class="formGrid vehicleGrid">
+
+        <!-- Vehicle Type -->
+        <div class="fieldGroup">
+          <label>ประเภทรถ <span class="required">*</span></label>
+          <select class="vehicleInput vehicleTypeSelect" data-field="vehicleType" data-option-key="vehicleType" required>
+            <option value="">กำลังโหลดข้อมูล...</option>
+          </select>
+          <input
+            class="otherInput vehicleOtherInput hidden"
+            data-field="vehicleTypeOther"
+            type="text"
+            placeholder="กรอกประเภทรถอื่นๆ"
+          >
+        </div>
+
+        <!-- Brand -->
+        <div class="fieldGroup">
+          <label>ยี่ห้อรถ <span class="required">*</span></label>
+          <select class="vehicleInput brandSelect" data-field="brand" data-option-key="brand" required>
+            <option value="">กำลังโหลดข้อมูล...</option>
+          </select>
+          <input
+            class="otherInput vehicleOtherInput hidden"
+            data-field="brandOther"
+            type="text"
+            placeholder="กรอกยี่ห้ออื่นๆ"
+          >
+        </div>
+
+        <!-- Car Color -->
+        <div class="fieldGroup">
+          <label>สีรถ <span class="required">*</span></label>
+          <select class="vehicleInput carColorSelect" data-field="carColor" data-option-key="carColor" required>
+            <option value="">กำลังโหลดข้อมูล...</option>
+          </select>
+          <input
+            class="otherInput vehicleOtherInput hidden"
+            data-field="carColorOther"
+            type="text"
+            placeholder="กรอกสีอื่นๆ"
+          >
+        </div>
+
+        <!-- Plate Number -->
+        <div class="fieldGroup">
+          <label>หมายเลขทะเบียน <span class="required">*</span></label>
+          <input
+            class="vehicleInput plateNumberInput"
+            data-field="plateNumber"
+            type="text"
+            inputmode="text"
+            placeholder="เช่น กข1234"
+            maxlength="20"
+            required
+          >
+          <small class="fieldHint">กรอกได้เฉพาะตัวเลขและอักษรไทยเท่านั้น ห้ามเว้นวรรคหรืออักขระพิเศษ</small>
+        </div>
+
+        <!-- Province -->
+        <div class="fieldGroup">
+          <label>หมวดจังหวัด <span class="required">*</span></label>
+          <select class="vehicleInput provinceSelect" data-field="province" data-option-key="province" required>
+            <option value="">กำลังโหลดข้อมูล...</option>
+          </select>
+          <input
+            class="otherInput vehicleOtherInput hidden"
+            data-field="provinceOther"
+            type="text"
+            placeholder="กรอกจังหวัดอื่นๆ"
+          >
+        </div>
+
+      </div>
+
+      <!-- VEHICLE IMAGES -->
+      <div class="vehicleImageBlock">
+        <div class="subSectionHeader">
+          <div>
+            <h4>รูปรถ</h4>
+            <p>เพิ่มได้สูงสุด 3 ภาพ เช่น ด้านหน้า ด้านข้าง หรือมุมอื่นๆ</p>
+          </div>
+
+          <button class="btn btnSoft addVehicleImageBtn" type="button">
+            <span class="btnIcon">+</span>
+            เพิ่มรูปรถ
+          </button>
+        </div>
+
+        <div class="vehicleImagesList">
+          <!-- app.js จะสร้าง image item ตรงนี้ -->
+        </div>
+      </div>
+
+      <!-- BOOK IMAGE -->
+      <div class="vehicleImageBlock bookImageBlock">
+        <div class="subSectionHeader">
+          <div>
+            <h4>ภาพสำเนาทะเบียนรถ / เล่มรถ <span class="required">*</span></h4>
+            <p>ต้องแนบ 1 ภาพต่อรถ 1 คัน</p>
+          </div>
+        </div>
+
+        <div class="bookImageSlot">
+          <!-- app.js จะสร้าง book image item ตรงนี้ -->
+        </div>
+      </div>
+    </article>
+  </template>
+
+
   <!-- IMAGE ITEM TEMPLATE -->
   <template id="imageItemTemplate">
-    <div class="imageItem" data-image-index="">
+    <div class="imageItem" data-image-id="">
       <div class="imagePreviewBox">
         <img class="imagePreview hidden" alt="ตัวอย่างรูปภาพ">
         <div class="emptyPreview">
@@ -336,6 +441,42 @@
     </div>
   </template>
 
-  <script src="./app.js?v=1"></script>
+
+  <!-- BOOK IMAGE ITEM TEMPLATE -->
+  <template id="bookImageItemTemplate">
+    <div class="imageItem bookImageItem" data-image-id="">
+      <div class="imagePreviewBox">
+        <img class="imagePreview hidden" alt="ตัวอย่างภาพสำเนาทะเบียนรถหรือเล่มรถ">
+        <div class="emptyPreview">
+          <span>ยังไม่มีภาพสำเนา/เล่มรถ</span>
+        </div>
+      </div>
+
+      <div class="imageControls">
+        <div class="imageTitle">
+          <strong class="imageLabel">ภาพสำเนาทะเบียนรถ / เล่มรถ</strong>
+          <small class="imageStatus">ยังไม่ได้เลือกรูป</small>
+        </div>
+
+        <div class="imageButtons bookImageButtons">
+          <label class="btn btnSoft filePickLabel">
+            อัปโหลด
+            <input class="imageFileInput" type="file" accept="image/*">
+          </label>
+
+          <button class="btn btnSoft cameraOpenBtn" type="button">
+            เปิดกล้อง
+          </button>
+
+          <button class="btn btnDanger clearBookImageBtn" type="button">
+            ล้างรูป
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+
+  <script src="./app.js?v=2"></script>
 </body>
 </html>
