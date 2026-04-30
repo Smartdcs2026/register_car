@@ -1,7 +1,8 @@
 /************************************************************
  * Vehicle Registration System
- * style.css
+ * style.css v2
  ************************************************************/
+
 
 /* =========================
    BASE
@@ -11,10 +12,12 @@
   --bg-main: #f1f5f9;
   --bg-card: #ffffff;
   --bg-soft: #f8fafc;
+  --bg-dark: #0f172a;
 
   --text-main: #0f172a;
   --text-muted: #64748b;
   --text-soft: #94a3b8;
+  --text-white: #ffffff;
 
   --border: #e2e8f0;
   --border-strong: #cbd5e1;
@@ -31,6 +34,7 @@
   --success: #16a34a;
   --warning: #f59e0b;
   --error: #ef4444;
+  --info: #2563eb;
 
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
@@ -39,6 +43,7 @@
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 22px;
+  --radius-xl: 28px;
 
   --input-height: 46px;
   --transition: 160ms ease;
@@ -99,6 +104,10 @@ img {
   padding: 24px 0 32px;
 }
 
+.appScreen {
+  width: 100%;
+}
+
 .appHeader {
   display: flex;
   align-items: center;
@@ -106,7 +115,7 @@ img {
   gap: 16px;
   margin-bottom: 18px;
   padding: 18px 20px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(226, 232, 240, 0.92);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -206,6 +215,120 @@ img {
 
 
 /* =========================
+   CONSENT SCREEN
+========================= */
+
+.consentScreen {
+  min-height: calc(100vh - 64px);
+  display: grid;
+  place-items: center;
+  padding: 12px 0;
+}
+
+.consentCard {
+  width: min(820px, 100%);
+  padding: clamp(22px, 4vw, 36px);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(14px);
+}
+
+.consentLogoWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.consentLogo {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  padding: 8px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.consentCard h1 {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(1.25rem, 4vw, 1.9rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.consentSubtitle {
+  margin: 8px 0 18px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.consentTextBox {
+  max-height: 330px;
+  overflow-y: auto;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-soft);
+  color: var(--text-main);
+  line-height: 1.72;
+  font-size: 0.95rem;
+}
+
+.consentTextBox p {
+  margin: 0 0 12px;
+}
+
+.consentTextBox p:last-child {
+  margin-bottom: 0;
+}
+
+.consentCheckRow {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: start;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  color: var(--text-main);
+  font-weight: 700;
+  line-height: 1.52;
+  cursor: pointer;
+}
+
+.consentCheckRow input {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+}
+
+.consentActions {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.consentActions .btn {
+  min-width: min(100%, 340px);
+}
+
+.consentVersion {
+  margin: 14px 0 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+
+/* =========================
    FORM
 ========================= */
 
@@ -241,7 +364,7 @@ img {
   line-height: 1.5;
 }
 
-.imageHeader {
+.vehicleSectionTop {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -425,6 +548,12 @@ select:disabled {
   border-color: var(--danger-hover);
 }
 
+.btnInfo {
+  color: #ffffff;
+  background: var(--info);
+  border-color: var(--info);
+}
+
 .btnIcon {
   display: inline-grid;
   place-items: center;
@@ -434,6 +563,13 @@ select:disabled {
   background: rgba(15, 23, 42, 0.08);
   font-size: 1.15rem;
   line-height: 1;
+}
+
+.btnPrimary .btnIcon,
+.btnSecondary .btnIcon,
+.btnDanger .btnIcon,
+.btnInfo .btnIcon {
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .formActions {
@@ -446,14 +582,95 @@ select:disabled {
 
 
 /* =========================
-   IMAGE SECTION
+   VEHICLE CARDS
 ========================= */
 
-.imageList {
+.vehicleList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.vehicleCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #ffffff 68%, #f8fafc 100%);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.vehicleCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+}
+
+.vehicleCardTitle {
+  margin: 0;
+  font-size: 1.06rem;
+  color: var(--text-main);
+}
+
+.vehicleCardSubtitle {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.vehicleGrid {
+  padding: 18px;
+}
+
+.vehicleImageBlock {
+  margin: 0 18px 18px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+
+.bookImageBlock {
+  background: #fffaf0;
+  border-color: #fed7aa;
+}
+
+.subSectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.subSectionHeader h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--text-main);
+}
+
+.subSectionHeader p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.vehicleImagesList,
+.bookImageSlot {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
+  gap: 12px;
 }
+
+
+/* =========================
+   IMAGE ITEMS
+========================= */
 
 .imageItem {
   display: grid;
@@ -464,6 +681,10 @@ select:disabled {
   border-radius: var(--radius-md);
   background: #ffffff;
   box-shadow: var(--shadow-sm);
+}
+
+.bookImageItem {
+  border-color: #fdba74;
 }
 
 .imagePreviewBox {
@@ -478,6 +699,15 @@ select:disabled {
     linear-gradient(315deg, #f8fafc 25%, transparent 25%) 0 0 / 20px 20px,
     linear-gradient(45deg, #f8fafc 25%, #e2e8f0 25%) 0 0 / 20px 20px;
   border: 1px dashed var(--border-strong);
+}
+
+.bookImageItem .imagePreviewBox {
+  background:
+    linear-gradient(135deg, #fff7ed 25%, transparent 25%) -10px 0 / 20px 20px,
+    linear-gradient(225deg, #fff7ed 25%, transparent 25%) -10px 0 / 20px 20px,
+    linear-gradient(315deg, #fff7ed 25%, transparent 25%) 0 0 / 20px 20px,
+    linear-gradient(45deg, #fff7ed 25%, #fed7aa 25%) 0 0 / 20px 20px;
+  border-color: #fdba74;
 }
 
 .imagePreview {
@@ -524,6 +754,10 @@ select:disabled {
   gap: 10px;
 }
 
+.bookImageButtons {
+  align-items: center;
+}
+
 .filePickLabel {
   position: relative;
   overflow: hidden;
@@ -534,17 +768,6 @@ select:disabled {
   inset: 0;
   cursor: pointer;
   opacity: 0;
-}
-
-.imageNote {
-  margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: 0.86rem;
-  line-height: 1.5;
 }
 
 
@@ -629,7 +852,7 @@ select:disabled {
 ========================= */
 
 .swal2-popup.vehicleSwalPopup {
-  width: min(560px, calc(100% - 24px));
+  width: min(720px, calc(100% - 24px));
   padding: 0;
   border-radius: 22px;
   overflow: hidden;
@@ -647,9 +870,42 @@ select:disabled {
   font-size: 1.12rem;
 }
 
+.confirmPersonBox {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.confirmPersonBox h4 {
+  margin: 0 0 10px;
+  font-size: 0.98rem;
+}
+
+.confirmVehicleList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.confirmVehicleCard {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.confirmVehicleHeader {
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border);
+  font-weight: 900;
+}
+
 .platePreview {
   width: min(380px, 100%);
-  margin: 0 auto 16px;
+  margin: 14px auto 16px;
   padding: 16px 18px 14px;
   border: 3px solid #111827;
   border-radius: 16px;
@@ -683,9 +939,9 @@ select:disabled {
 
 .vehicleDetailGrid {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 150px 1fr;
   gap: 8px 12px;
-  margin-top: 14px;
+  margin: 14px;
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -715,6 +971,142 @@ select:disabled {
   border-radius: 12px !important;
   background: var(--secondary) !important;
   font-weight: 800 !important;
+}
+
+
+/* =========================
+   SUCCESS RESULT
+========================= */
+
+.saveResultWrap {
+  text-align: left;
+  line-height: 1.55;
+}
+
+.saveResultSummary {
+  padding: 14px;
+  border-radius: 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  margin-bottom: 14px;
+}
+
+.saveResultSummary h4 {
+  margin: 0 0 8px;
+  color: #166534;
+}
+
+.saveVehicleResultList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.saveVehicleResultCard {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.saveVehicleResultHeader {
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border);
+  font-weight: 900;
+}
+
+.saveVehicleResultBody {
+  padding: 14px;
+}
+
+.pinBox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #111827;
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  font-size: 1.08rem;
+}
+
+.resultLink {
+  color: #2563eb;
+  font-weight: 800;
+  word-break: break-all;
+}
+
+.resultLink:hover {
+  text-decoration: underline;
+}
+
+
+/* =========================
+   VEHICLE PUBLIC PAGE
+   ใช้ร่วมกับ vehicle.html ในรอบถัดไป
+========================= */
+
+.publicVehicleShell {
+  width: min(860px, calc(100% - 24px));
+  margin: 0 auto;
+  padding: 24px 0 36px;
+}
+
+.pinAccessCard,
+.publicVehicleCard {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 22px;
+}
+
+.pinAccessCard h1,
+.publicVehicleCard h1 {
+  margin: 0;
+  font-size: clamp(1.25rem, 4vw, 1.8rem);
+}
+
+.pinAccessCard p,
+.publicVehicleCard p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.pinInputRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.pinInputRow input {
+  max-width: 220px;
+  text-align: center;
+  font-size: 1.2rem;
+  letter-spacing: 0.14em;
+  font-weight: 900;
+}
+
+.publicVehicleStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 900;
+  font-size: 0.86rem;
+}
+
+.publicVehicleStatus.inactive {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 
@@ -784,6 +1176,25 @@ select:disabled {
     padding: 10px 0 18px;
   }
 
+  .consentScreen {
+    min-height: calc(100vh - 20px);
+  }
+
+  .consentCard {
+    border-radius: 20px;
+  }
+
+  .consentTextBox {
+    max-height: 340px;
+    padding: 14px;
+  }
+
+  .consentCheckRow {
+    grid-template-columns: 22px 1fr;
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+
   .appHeader {
     align-items: flex-start;
     flex-direction: column;
@@ -821,12 +1232,14 @@ select:disabled {
     margin-bottom: 14px;
   }
 
-  .imageHeader {
+  .vehicleSectionTop,
+  .subSectionHeader {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .imageHeader .btn {
+  .vehicleSectionTop .btn,
+  .subSectionHeader .btn {
     width: 100%;
   }
 
@@ -844,6 +1257,21 @@ select:disabled {
     font-size: 16px;
   }
 
+  .vehicleCardHeader {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+  }
+
+  .vehicleGrid {
+    padding: 14px;
+  }
+
+  .vehicleImageBlock {
+    margin: 0 14px 14px;
+    padding: 14px;
+  }
+
   .imageItem {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -857,6 +1285,10 @@ select:disabled {
     display: grid;
     grid-template-columns: 1fr 1fr 52px;
     gap: 8px;
+  }
+
+  .bookImageButtons {
+    grid-template-columns: 1fr 1fr 1fr;
   }
 
   .imageButtons .btn {
@@ -904,6 +1336,15 @@ select:disabled {
     margin-bottom: 5px;
     font-size: 0.92rem;
   }
+
+  .pinInputRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pinInputRow input {
+    max-width: none;
+  }
 }
 
 @media (max-width: 420px) {
@@ -923,11 +1364,23 @@ select:disabled {
     padding: 16px 10px;
   }
 
-  .imageButtons {
+  .vehicleCardHeader,
+  .vehicleGrid,
+  .vehicleImageBlock {
+    padding: 12px;
+  }
+
+  .vehicleImageBlock {
+    margin: 0 10px 12px;
+  }
+
+  .imageButtons,
+  .bookImageButtons {
     grid-template-columns: 1fr;
   }
 
-  .removeImageBtn {
+  .removeImageBtn,
+  .clearBookImageBtn {
     min-height: 42px;
   }
 
@@ -939,6 +1392,11 @@ select:disabled {
     padding: 14px 12px 12px;
     border-width: 2px;
     border-radius: 14px;
+  }
+
+  .consentLogo {
+    width: 64px;
+    height: 64px;
   }
 }
 
@@ -955,7 +1413,8 @@ select:disabled {
   .apiStatusBox,
   .formActions,
   .appFooter,
-  .cameraModal {
+  .cameraModal,
+  .consentScreen {
     display: none !important;
   }
 
@@ -966,7 +1425,9 @@ select:disabled {
 
   .mainCard,
   .appHeader,
-  .formSection {
+  .formSection,
+  .vehicleCard,
+  .vehicleImageBlock {
     box-shadow: none;
     border-color: #dddddd;
   }
