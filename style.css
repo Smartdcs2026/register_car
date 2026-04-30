@@ -1117,7 +1117,7 @@ select:disabled {
 .loadingOverlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 900;
   display: grid;
   place-items: center;
   padding: 20px;
