@@ -1,11 +1,13 @@
 /************************************************************
  * Vehicle Registration System
- * app.js v5
+ * app.js v6
  *
  * Version:
  * - Public user success screen
  * - Hide PDF URL / QR URL / PIN from normal users
- * - Show only registration summary + Sticker No
+ * - Show registration summary + Sticker No
+ * - Show PDF / Email status with clear badge
+ * - Fallback result fields to prevent "-" when backend sends nested data
  ************************************************************/
 
 
@@ -1633,24 +1635,46 @@ async function showSaveSuccess(result) {
     icon: "success",
     title: "บันทึกข้อมูลเสร็จสิ้น",
     html: buildSaveSuccessHtml(result),
-    width: 760,
+    width: 780,
     confirmButtonText: "ตกลง"
   });
 }
 
 
 function buildSaveSuccessHtml(result) {
+  result = result || {};
+
   const vehicles = Array.isArray(result.vehicles) ? result.vehicles : [];
 
+  const dc = pickFirstValue(result.dc, result.person && result.person.dc);
+  const fullName = pickFirstValue(result.fullName, result.person && result.person.fullName);
+  const employeeId = pickFirstValue(result.employeeId, result.person && result.person.employeeId);
+  const department = pickFirstValue(result.department, result.person && result.person.department);
+  const company = pickFirstValue(result.company, result.person && result.person.company);
+  const phone = pickFirstValue(result.phone, result.person && result.person.phone);
+
+  const pdfStatusHtml = buildStatusBadgeHtml(result.pdfStatus);
+  const emailStatusHtml = buildStatusBadgeHtml(result.emailStatus);
+
+  const pdfMessage = buildPdfStatusMessage(result);
+  const emailMessage = buildEmailStatusMessage(result);
+
   const vehicleHtml = vehicles.map(function (vehicle) {
+    const stickerLabel = pickFirstValue(vehicle.stickerLabel, vehicle.stickerNo);
+    const plateText = [
+      pickFirstValue(vehicle.plateNumber),
+      pickFirstValue(vehicle.province)
+    ].filter(Boolean).join(" ");
+
     return [
       '<div class="saveVehicleResultCard">',
         '<div class="saveVehicleResultHeader">',
-          'Sticker No: ', escapeHtml(vehicle.stickerLabel || "-"),
+          '<span>Sticker No: ', escapeHtml(stickerLabel || "-"), '</span>',
         '</div>',
+
         '<div class="saveVehicleResultBody">',
           '<p><b>รถคันที่:</b> ', escapeHtml(vehicle.vehicleNo || "-"), '</p>',
-          '<p><b>ทะเบียน:</b> ', escapeHtml(vehicle.plateNumber || "-"), ' ', escapeHtml(vehicle.province || ""), '</p>',
+          '<p><b>ทะเบียน:</b> ', escapeHtml(plateText || "-"), '</p>',
           '<p><b>ประเภทรถ:</b> ', escapeHtml(vehicle.vehicleType || "-"), '</p>',
           '<p><b>ยี่ห้อ:</b> ', escapeHtml(vehicle.brand || "-"), '</p>',
           '<p><b>สี:</b> ', escapeHtml(vehicle.carColor || "-"), '</p>',
@@ -1661,27 +1685,45 @@ function buildSaveSuccessHtml(result) {
 
   return [
     '<div class="saveResultWrap">',
+
       '<div class="saveResultSummary">',
         '<h4>ข้อมูลถูกบันทึกเข้าระบบเรียบร้อยแล้ว</h4>',
-        '<p><b>Registration ID:</b> ', escapeHtml(result.registrationId || "-"), '</p>',
-        '<p><b>วันที่/เวลา:</b> ', escapeHtml(result.timestamp || "-"), '</p>',
-        '<p><b>DC:</b> ', escapeHtml(result.dc || "-"), '</p>',
-        '<p><b>ชื่อ-นามสกุล:</b> ', escapeHtml(result.fullName || "-"), '</p>',
-        '<p><b>รหัสพนักงาน:</b> ', escapeHtml(result.employeeId || "-"), '</p>',
-        '<p><b>แผนก:</b> ', escapeHtml(result.department || "-"), '</p>',
-        '<p><b>บริษัท:</b> ', escapeHtml(result.company || "-"), '</p>',
-        '<p><b>จำนวนรถที่บันทึก:</b> ', escapeHtml(result.vehicleCount || vehicles.length || "-"), ' คัน</p>',
-        '<p><b>สถานะเอกสาร PDF:</b> ', escapeHtml(result.pdfStatus || "-"), '</p>',
-        '<p><b>สถานะการส่ง Email:</b> ', escapeHtml(result.emailStatus || "-"), '</p>',
+
+        '<div class="vehicleDetailGrid">',
+          detailRowHtml("Registration ID", result.registrationId || "-"),
+          detailRowHtml("วันที่/เวลา", result.timestamp || "-"),
+          detailRowHtml("DC", dc || "-"),
+          detailRowHtml("ชื่อ-นามสกุล", fullName || "-"),
+          detailRowHtml("รหัสพนักงาน", employeeId || "-"),
+          detailRowHtml("แผนก", department || "-"),
+          detailRowHtml("บริษัท", company || "-"),
+          detailRowHtml("เบอร์โทร", phone || "-"),
+          detailRowHtml("จำนวนรถที่บันทึก", (result.vehicleCount || vehicles.length || "-") + " คัน"),
+        '</div>',
+
+        '<div style="margin-top:14px;padding:12px;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:14px;">',
+          '<p style="margin:0 0 8px;"><b>สถานะเอกสาร PDF:</b> ', pdfStatusHtml, '</p>',
+          '<p style="margin:0;color:#166534;font-weight:700;">', escapeHtml(pdfMessage), '</p>',
+        '</div>',
+
+        '<div style="margin-top:12px;padding:12px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:14px;">',
+          '<p style="margin:0 0 8px;"><b>สถานะการส่ง Email:</b> ', emailStatusHtml, '</p>',
+          '<p style="margin:0;color:#334155;font-weight:700;">', escapeHtml(emailMessage), '</p>',
+          result.emailSentAt
+            ? '<p style="margin:8px 0 0;color:#64748b;"><b>เวลาส่ง Email:</b> ' + escapeHtml(result.emailSentAt) + '</p>'
+            : '',
+        '</div>',
       '</div>',
 
-      '<div class="saveVehicleResultList">',
+      '<div class="saveVehicleResultList" style="margin-top:14px;">',
         vehicleHtml || '<p>ไม่พบรายการรถที่ระบบส่งกลับ</p>',
       '</div>',
 
-      '<p style="margin-top:12px;color:#475569;font-weight:700;">',
-        'ระบบได้ส่งเอกสาร PDF ไปยัง Email ของผู้เกี่ยวข้องตาม DC ที่กำหนดไว้แล้ว หากไม่พบ Email สำหรับ DC นี้ กรุณาตรวจสอบชีท Email',
+      '<p style="margin-top:12px;color:#475569;font-weight:700;line-height:1.55;">',
+        'ระบบจะแจ้งเอกสาร PDF ไปยัง Email ของผู้เกี่ยวข้องตาม DC ที่กำหนดไว้ในชีท Email เท่านั้น ',
+        'ผู้ใช้งานทั่วไปจะไม่เห็นลิงก์ PDF, QR Code URL หรือ PIN หลังบันทึก',
       '</p>',
+
     '</div>'
   ].join("");
 }
@@ -1834,6 +1876,100 @@ function formatDateForFileName(date) {
     pad(date.getMinutes()),
     pad(date.getSeconds())
   ].join("");
+}
+
+
+function pickFirstValue() {
+  for (let i = 0; i < arguments.length; i++) {
+    const value = normalizeText(arguments[i]);
+    if (value) return value;
+  }
+  return "";
+}
+
+
+function buildStatusBadgeHtml(status) {
+  const value = normalizeText(status) || "-";
+  const upper = value.toUpperCase();
+
+  let bg = "#f1f5f9";
+  let color = "#334155";
+  let border = "#cbd5e1";
+
+  if (upper === "SUCCESS" || upper === "SENT") {
+    bg = "#dcfce7";
+    color = "#166534";
+    border = "#86efac";
+  } else if (upper === "NO_RECIPIENT" || upper === "SKIPPED_PDF_FAILED") {
+    bg = "#fef3c7";
+    color = "#92400e";
+    border = "#fcd34d";
+  } else if (upper === "FAILED") {
+    bg = "#fee2e2";
+    color = "#991b1b";
+    border = "#fca5a5";
+  } else if (upper === "PENDING") {
+    bg = "#e0f2fe";
+    color = "#075985";
+    border = "#7dd3fc";
+  }
+
+  return [
+    '<span style="',
+      'display:inline-flex;',
+      'align-items:center;',
+      'padding:5px 10px;',
+      'border-radius:999px;',
+      'font-weight:900;',
+      'font-size:0.86rem;',
+      'background:', bg, ';',
+      'color:', color, ';',
+      'border:1px solid ', border, ';',
+    '">',
+      escapeHtml(value),
+    '</span>'
+  ].join("");
+}
+
+
+function buildEmailStatusMessage(result) {
+  const status = normalizeText(result.emailStatus).toUpperCase();
+  const error = normalizeText(result.emailError);
+  const count = Number(result.emailRecipientsCount || 0);
+
+  if (status === "SENT") {
+    return "ส่ง Email พร้อมไฟล์ PDF แนบให้ผู้เกี่ยวข้องแล้ว จำนวนผู้รับ " + count + " ราย";
+  }
+
+  if (status === "NO_RECIPIENT") {
+    return "ไม่พบ Email สำหรับ DC นี้ กรุณาตรวจสอบชีท Email";
+  }
+
+  if (status === "FAILED") {
+    return "ส่ง Email ไม่สำเร็จ" + (error ? " : " + error : "");
+  }
+
+  if (status === "SKIPPED_PDF_FAILED") {
+    return "ไม่ได้ส่ง Email เพราะสร้าง PDF ไม่สำเร็จ";
+  }
+
+  return "ยังไม่พบสถานะการส่ง Email";
+}
+
+
+function buildPdfStatusMessage(result) {
+  const status = normalizeText(result.pdfStatus).toUpperCase();
+  const error = normalizeText(result.pdfError);
+
+  if (status === "SUCCESS") {
+    return "สร้างเอกสาร PDF สำเร็จ";
+  }
+
+  if (status === "FAILED") {
+    return "สร้าง PDF ไม่สำเร็จ" + (error ? " : " + error : "");
+  }
+
+  return "ยังไม่พบสถานะ PDF";
 }
 
 
