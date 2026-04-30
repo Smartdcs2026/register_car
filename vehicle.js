@@ -1,25 +1,54 @@
 /************************************************************
- * Vehicle Access Page
+ * Vehicle Registration System
  * vehicle.js v1
+ *
+ * ใช้สำหรับหน้า vehicle.html
+ * เปิดข้อมูลรถจาก QR Code ด้วย Vehicle Token + PIN
  ************************************************************/
+
+
+/**
+ * =========================
+ * CONFIG
+ * =========================
+ */
 
 const VEHICLE_CONFIG = {
   API_BASE: "https://registercar.somchaibutphon.workers.dev",
   TOKEN_PARAM: "v",
-  PIN_REGEX: /^[0-9]{6}$/
+  PIN_REGEX: /^[0-9]{6}$/,
+  API_TIMEOUT_MS: 60000
+};
+
+
+/**
+ * =========================
+ * STATE / DOM
+ * =========================
+ */
+
+const VehicleState = {
+  token: ""
 };
 
 const VehicleDOM = {};
 
 document.addEventListener("DOMContentLoaded", initVehiclePage);
 
+
+/**
+ * =========================
+ * INIT
+ * =========================
+ */
+
 function initVehiclePage() {
   cacheVehicleDom();
   bindVehicleEvents();
 
-  const token = getVehicleTokenFromUrl();
+  VehicleState.token = getVehicleTokenFromUrl();
 
-  if (!token) {
+  if (!VehicleState.token) {
     showError("ไม่พบรหัสรถในลิงก์ QR Code กรุณาตรวจสอบ QR Code อีกครั้ง");
     VehicleDOM.verifyBtn.disabled = true;
     VehicleDOM.pinInput.disabled = true;
@@ -28,6 +57,7 @@ function initVehiclePage() {
 
   VehicleDOM.pinInput.focus();
 }
+
 
 function cacheVehicleDom() {
   VehicleDOM.pinForm = document.getElementById("pinForm");
@@ -51,6 +81,7 @@ function cacheVehicleDom() {
   VehicleDOM.status = document.getElementById("status");
 }
 
+
 function bindVehicleEvents() {
   VehicleDOM.pinForm.addEventListener("submit", handleVerifySubmit);
 
@@ -63,10 +94,17 @@ function bindVehicleEvents() {
   });
 }
 
+
+/**
+ * =========================
+ * SUBMIT
+ * =========================
+ */
+
 async function handleVerifySubmit(event) {
   event.preventDefault();
 
-  const token = getVehicleTokenFromUrl();
+  const token = VehicleState.token || getVehicleTokenFromUrl();
   const pin = String(VehicleDOM.pinInput.value || "").trim();
 
   if (!token) {
@@ -87,7 +125,7 @@ async function handleVerifySubmit(event) {
     const result = await apiPost("/api/vehicle/access", {
       token: token,
       pin: pin
-    });
+    }, VEHICLE_CONFIG.API_TIMEOUT_MS);
 
     if (!result || !result.ok) {
       throw new Error(result && result.message ? result.message : "ไม่สามารถเปิดข้อมูลรถได้");
@@ -96,7 +134,7 @@ async function handleVerifySubmit(event) {
     renderVehicleResult(result.vehicle || {});
     VehicleDOM.resultPanel.classList.add("show");
 
-    Swal.fire({
+    await Swal.fire({
       icon: "success",
       title: "เปิดข้อมูลรถสำเร็จ",
       text: "ระบบแสดงข้อมูลรถตาม QR Code แล้ว",
@@ -112,6 +150,13 @@ async function handleVerifySubmit(event) {
     setLoading(false);
   }
 }
+
+
+/**
+ * =========================
+ * RENDER
+ * =========================
+ */
 
 function renderVehicleResult(vehicle) {
   VehicleDOM.stickerNo.textContent = valueOrDash(vehicle.stickerLabel || vehicle.stickerNo);
@@ -130,41 +175,82 @@ function renderVehicleResult(vehicle) {
   VehicleDOM.status.textContent = valueOrDash(vehicle.status);
 }
 
-async function apiPost(path, body) {
-  const response = await fetch(getApiBase() + path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json;charset=utf-8",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify(body || {})
-  });
 
-  const text = await response.text();
+/**
+ * =========================
+ * API
+ * =========================
+ */
 
-  let data;
+async function apiPost(path, body, timeoutMs) {
+  const controller = new AbortController();
+
+  const timeout = setTimeout(function () {
+    controller.abort();
+  }, timeoutMs || VEHICLE_CONFIG.API_TIMEOUT_MS);
 
   try {
-    data = JSON.parse(text);
+    const response = await fetch(getApiBase() + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(body || {}),
+      signal: controller.signal
+    });
+
+    const text = await response.text();
+
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      throw new Error("API ตอบกลับไม่ใช่ JSON: " + text.slice(0, 220));
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || "API error: " + response.status);
+    }
+
+    return data;
+
   } catch (err) {
-    throw new Error("API ตอบกลับไม่ใช่ JSON: " + text.slice(0, 180));
-  }
+    if (err && err.name === "AbortError") {
+      throw new Error("เชื่อมต่อระบบนานเกินไป กรุณาลองใหม่อีกครั้ง");
+    }
 
-  if (!response.ok) {
-    throw new Error(data.message || "API error: " + response.status);
-  }
+    throw err;
 
-  return data;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
+
 
 function getApiBase() {
-  return String(VEHICLE_CONFIG.API_BASE || "").replace(/\/+$/, "");
+  const base = String(VEHICLE_CONFIG.API_BASE || "").trim().replace(/\/+$/, "");
+
+  if (!base) {
+    throw new Error("ยังไม่ได้ตั้งค่า API_BASE ใน vehicle.js");
+  }
+
+  return base;
 }
+
+
+/**
+ * =========================
+ * HELPERS
+ * =========================
+ */
 
 function getVehicleTokenFromUrl() {
   const params = new URLSearchParams(window.location.search);
   return String(params.get(VEHICLE_CONFIG.TOKEN_PARAM) || "").trim();
 }
+
 
 function setLoading(isLoading) {
   VehicleDOM.verifyBtn.disabled = isLoading;
@@ -172,15 +258,18 @@ function setLoading(isLoading) {
   VehicleDOM.verifyBtn.textContent = isLoading ? "กำลังตรวจสอบ..." : "ตรวจสอบ";
 }
 
+
 function showError(message) {
   VehicleDOM.errorBox.textContent = message || "เกิดข้อผิดพลาด";
   VehicleDOM.errorBox.classList.add("show");
 }
 
+
 function hideError() {
   VehicleDOM.errorBox.textContent = "";
   VehicleDOM.errorBox.classList.remove("show");
 }
+
 
 function valueOrDash(value) {
   const text = String(value == null ? "" : value).trim();
