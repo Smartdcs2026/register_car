@@ -1,18 +1,11 @@
 /************************************************************
  * Vehicle Registration System
- * app.js v4
+ * app.js v5
  *
- * รองรับ:
- * - Consent ก่อนเข้าฟอร์ม
- * - โหลด Dropdown จาก Cloudflare Worker
- * - 1 คน เพิ่มรถได้สูงสุด 3 คัน
- * - รถแต่ละคันมีรูปรถสูงสุด 3 รูป
- * - รถแต่ละคันมีภาพสำเนาทะเบียนรถ / เล่มรถ 1 รูป
- * - อัปโหลดรูป / เปิดกล้อง / ย่อรูปก่อนส่ง
- * - SweetAlert ตรวจสอบข้อมูลก่อนบันทึก
- * - ส่งข้อมูลไป /api/save
- * - ตรวจสอบว่าต้องได้ PDF URL กลับมา
- * - แสดง PDF, QR, PIN หลังบันทึกสำเร็จ
+ * Version:
+ * - Public user success screen
+ * - Hide PDF URL / QR URL / PIN from normal users
+ * - Show only registration summary + Sticker No
  ************************************************************/
 
 
@@ -39,8 +32,6 @@ const APP_CONFIG = {
 
   API_TIMEOUT_GET_MS: 60000,
   API_TIMEOUT_SAVE_MS: 240000,
-
-  REQUIRE_PDF_SUCCESS: true,
 
   VALIDATION: {
     PLATE: /^[ก-ฮ0-9]+$/,
@@ -259,7 +250,6 @@ function showConsentScreen() {
 
 function syncConsentButtonState() {
   if (!DOM.consentCheck || !DOM.acceptConsentBtn) return;
-
   DOM.acceptConsentBtn.disabled = !DOM.consentCheck.checked;
 }
 
@@ -362,7 +352,7 @@ async function apiPost(path, body, timeoutMs) {
 
   } catch (err) {
     if (err && err.name === "AbortError") {
-      throw new Error("ระบบใช้เวลาบันทึกนานเกินไป กรุณาตรวจสอบขนาดรูปภาพ, Worker, Apps Script หรือขั้นตอนสร้าง PDF");
+      throw new Error("ระบบใช้เวลาบันทึกนานเกินไป กรุณาตรวจสอบขนาดรูปภาพ, Worker, Apps Script หรือขั้นตอนสร้าง PDF/ส่ง Email");
     }
 
     throw err;
@@ -1516,7 +1506,7 @@ async function handleSubmit(event) {
 
     AppState.isSubmitting = true;
     setSubmitState(true);
-    showLoading("กำลังบันทึกข้อมูล สร้าง QR Code และสร้าง PDF...");
+    showLoading("กำลังบันทึกข้อมูล สร้างเอกสาร และส่ง Email...");
 
     const result = await apiPost("/api/save", {
       payload: payload
@@ -1526,13 +1516,6 @@ async function handleSubmit(event) {
       throw new Error(result && result.message ? result.message : "บันทึกข้อมูลไม่สำเร็จ");
     }
 
-    validatePdfResult(result);
-
-    /*
-     * สำคัญมาก:
-     * ต้องปิด loading ก่อนแสดง SweetAlert success
-     * ไม่อย่างนั้น loadingOverlay จะบัง SweetAlert แล้วดูเหมือนระบบค้าง
-     */
     hideLoading();
 
     await showSaveSuccess(result);
@@ -1551,29 +1534,6 @@ async function handleSubmit(event) {
     AppState.isSubmitting = false;
     setSubmitState(false);
     hideLoading();
-  }
-}
-
-
-function validatePdfResult(result) {
-  if (!APP_CONFIG.REQUIRE_PDF_SUCCESS) return;
-
-  const pdfUrl = normalizeText(result && result.pdfUrl);
-  const pdfStatus = normalizeText(result && result.pdfStatus);
-  const pdfError = normalizeText(result && result.pdfError);
-
-  if (!pdfUrl) {
-    throw new Error(
-      "ข้อมูลอาจถูกบันทึกแล้ว แต่ระบบไม่ได้รับลิงก์ PDF กลับมา กรุณาตรวจสอบ Code.gs / Executions / คอลัมน์ PDF Status" +
-      (pdfError ? " รายละเอียด: " + pdfError : "")
-    );
-  }
-
-  if (pdfStatus && pdfStatus !== "SUCCESS") {
-    throw new Error(
-      "ข้อมูลอาจถูกบันทึกแล้ว แต่สร้าง PDF ไม่สำเร็จ สถานะ: " + pdfStatus +
-      (pdfError ? " รายละเอียด: " + pdfError : "")
-    );
   }
 }
 
@@ -1671,9 +1631,9 @@ function detailRowHtml(label, value) {
 async function showSaveSuccess(result) {
   await Swal.fire({
     icon: "success",
-    title: "บันทึกข้อมูลและสร้าง PDF สำเร็จ",
+    title: "บันทึกข้อมูลเสร็จสิ้น",
     html: buildSaveSuccessHtml(result),
-    width: 780,
+    width: 760,
     confirmButtonText: "ตกลง"
   });
 }
@@ -1682,55 +1642,18 @@ async function showSaveSuccess(result) {
 function buildSaveSuccessHtml(result) {
   const vehicles = Array.isArray(result.vehicles) ? result.vehicles : [];
 
-  const pdfHtml = result.pdfUrl
-    ? [
-        '<p><b>PDF:</b><br>',
-          '<a class="resultLink" href="', escapeAttribute(result.pdfUrl), '" target="_blank" rel="noopener">',
-            'เปิดไฟล์ PDF สรุปข้อมูล',
-          '</a>',
-        '</p>'
-      ].join("")
-    : [
-        '<p style="color:#dc2626;font-weight:800;">',
-          '<b>PDF:</b> ไม่พบลิงก์ PDF',
-        '</p>',
-        result.pdfError
-          ? '<p style="color:#dc2626;">' + escapeHtml(result.pdfError) + '</p>'
-          : ''
-      ].join("");
-
   const vehicleHtml = vehicles.map(function (vehicle) {
     return [
       '<div class="saveVehicleResultCard">',
         '<div class="saveVehicleResultHeader">',
-          'รถคันที่ ', escapeHtml(vehicle.vehicleNo || "-"),
-          ' : ', escapeHtml(vehicle.plateNumber || "-"),
-          ' ', escapeHtml(vehicle.province || ""),
+          'Sticker No: ', escapeHtml(vehicle.stickerLabel || "-"),
         '</div>',
         '<div class="saveVehicleResultBody">',
-          '<p><b>Vehicle ID:</b> ', escapeHtml(vehicle.vehicleId || "-"), '</p>',
-          '<p><b>PIN สำหรับเปิดข้อมูล:</b> <span class="pinBox">',
-            escapeHtml(vehicle.accessPin || "-"),
-          '</span></p>',
-          '<p><b>ลิงก์ตรวจสอบรถ:</b><br>',
-            '<a class="resultLink" href="', escapeAttribute(vehicle.vehiclePublicUrl || "#"), '" target="_blank" rel="noopener">',
-              escapeHtml(vehicle.vehiclePublicUrl || "-"),
-            '</a>',
-          '</p>',
-          '<p><b>QR Code:</b><br>',
-            '<a class="resultLink" href="', escapeAttribute(vehicle.qrCodeImageUrl || "#"), '" target="_blank" rel="noopener">',
-              'เปิดรูป QR Code',
-            '</a>',
-          '</p>',
-          vehicle.vehicleFolderUrl
-            ? [
-                '<p><b>โฟลเดอร์รูปรถ:</b><br>',
-                  '<a class="resultLink" href="', escapeAttribute(vehicle.vehicleFolderUrl), '" target="_blank" rel="noopener">',
-                    'เปิดโฟลเดอร์รูปรถ',
-                  '</a>',
-                '</p>'
-              ].join("")
-            : '',
+          '<p><b>รถคันที่:</b> ', escapeHtml(vehicle.vehicleNo || "-"), '</p>',
+          '<p><b>ทะเบียน:</b> ', escapeHtml(vehicle.plateNumber || "-"), ' ', escapeHtml(vehicle.province || ""), '</p>',
+          '<p><b>ประเภทรถ:</b> ', escapeHtml(vehicle.vehicleType || "-"), '</p>',
+          '<p><b>ยี่ห้อ:</b> ', escapeHtml(vehicle.brand || "-"), '</p>',
+          '<p><b>สี:</b> ', escapeHtml(vehicle.carColor || "-"), '</p>',
         '</div>',
       '</div>'
     ].join("");
@@ -1739,19 +1662,25 @@ function buildSaveSuccessHtml(result) {
   return [
     '<div class="saveResultWrap">',
       '<div class="saveResultSummary">',
-        '<h4>ระบบสร้างข้อมูลเรียบร้อยแล้ว</h4>',
+        '<h4>ข้อมูลถูกบันทึกเข้าระบบเรียบร้อยแล้ว</h4>',
         '<p><b>Registration ID:</b> ', escapeHtml(result.registrationId || "-"), '</p>',
-        '<p><b>Person ID:</b> ', escapeHtml(result.personId || "-"), '</p>',
-        '<p><b>เวลาบันทึก:</b> ', escapeHtml(result.timestamp || "-"), '</p>',
-        pdfHtml,
+        '<p><b>วันที่/เวลา:</b> ', escapeHtml(result.timestamp || "-"), '</p>',
+        '<p><b>DC:</b> ', escapeHtml(result.dc || "-"), '</p>',
+        '<p><b>ชื่อ-นามสกุล:</b> ', escapeHtml(result.fullName || "-"), '</p>',
+        '<p><b>รหัสพนักงาน:</b> ', escapeHtml(result.employeeId || "-"), '</p>',
+        '<p><b>แผนก:</b> ', escapeHtml(result.department || "-"), '</p>',
+        '<p><b>บริษัท:</b> ', escapeHtml(result.company || "-"), '</p>',
+        '<p><b>จำนวนรถที่บันทึก:</b> ', escapeHtml(result.vehicleCount || vehicles.length || "-"), ' คัน</p>',
+        '<p><b>สถานะเอกสาร PDF:</b> ', escapeHtml(result.pdfStatus || "-"), '</p>',
+        '<p><b>สถานะการส่ง Email:</b> ', escapeHtml(result.emailStatus || "-"), '</p>',
       '</div>',
 
       '<div class="saveVehicleResultList">',
         vehicleHtml || '<p>ไม่พบรายการรถที่ระบบส่งกลับ</p>',
       '</div>',
 
-      '<p style="margin-top:12px;color:#dc2626;font-weight:800;">',
-        'กรุณาจด PIN ของรถแต่ละคันไว้ เพราะต้องใช้คู่กับ QR Code เพื่อเปิดข้อมูลรถ',
+      '<p style="margin-top:12px;color:#475569;font-weight:700;">',
+        'ระบบได้ส่งเอกสาร PDF ไปยัง Email ของผู้เกี่ยวข้องตาม DC ที่กำหนดไว้แล้ว หากไม่พบ Email สำหรับ DC นี้ กรุณาตรวจสอบชีท Email',
       '</p>',
     '</div>'
   ].join("");
