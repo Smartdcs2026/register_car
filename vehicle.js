@@ -1,12 +1,11 @@
 /************************************************************
  * Vehicle Registration System
- * vehicle.js v2
+ * vehicle.js v3
  *
- * ใช้สำหรับหน้า vehicle.html
- * เปิดข้อมูลรถจาก QR Code ด้วย Vehicle Token + PIN
- * แสดงข้อมูลเจ้าของรถ + ข้อมูลรถ + รูปรถ + ภาพสำเนาทะเบียน/เล่มรถ
+ * Safe DOM version:
+ * - ไม่พังถ้า vehicle.html ขาดบาง id
+ * - แสดงข้อมูลเจ้าของรถ + ข้อมูลรถ + รูปรถ + ภาพเล่มรถ
  ************************************************************/
-
 
 const VEHICLE_CONFIG = {
   API_BASE: "https://registercar.somchaibutphon.workers.dev",
@@ -15,16 +14,13 @@ const VEHICLE_CONFIG = {
   API_TIMEOUT_MS: 60000
 };
 
-
 const VehicleState = {
   token: ""
 };
 
-
 const VehicleDOM = {};
 
 document.addEventListener("DOMContentLoaded", initVehiclePage);
-
 
 function initVehiclePage() {
   cacheVehicleDom();
@@ -34,63 +30,91 @@ function initVehiclePage() {
 
   if (!VehicleState.token) {
     showError("ไม่พบรหัสรถในลิงก์ QR Code กรุณาตรวจสอบ QR Code อีกครั้ง");
-    VehicleDOM.verifyBtn.disabled = true;
-    VehicleDOM.pinInput.disabled = true;
+    setElementDisabled(VehicleDOM.verifyBtn, true);
+    setElementDisabled(VehicleDOM.pinInput, true);
     return;
   }
 
-  VehicleDOM.pinInput.focus();
+  if (VehicleDOM.pinInput) {
+    VehicleDOM.pinInput.focus();
+  }
 }
-
 
 function cacheVehicleDom() {
-  VehicleDOM.pinForm = document.getElementById("pinForm");
-  VehicleDOM.pinInput = document.getElementById("pinInput");
-  VehicleDOM.verifyBtn = document.getElementById("verifyBtn");
-  VehicleDOM.errorBox = document.getElementById("errorBox");
-  VehicleDOM.resultPanel = document.getElementById("resultPanel");
+  VehicleDOM.pinForm = byId("pinForm");
+  VehicleDOM.pinInput = byId("pinInput");
+  VehicleDOM.verifyBtn = byId("verifyBtn");
+  VehicleDOM.errorBox = byId("errorBox");
+  VehicleDOM.resultPanel = byId("resultPanel");
 
-  VehicleDOM.stickerNo = document.getElementById("stickerNo");
-  VehicleDOM.plateNumber = document.getElementById("plateNumber");
-  VehicleDOM.province = document.getElementById("province");
+  VehicleDOM.stickerNo = byId("stickerNo");
+  VehicleDOM.plateNumber = byId("plateNumber");
+  VehicleDOM.province = byId("province");
 
-  VehicleDOM.dc = document.getElementById("dc");
-  VehicleDOM.fullName = document.getElementById("fullName");
-  VehicleDOM.employeeId = document.getElementById("employeeId");
-  VehicleDOM.phone = document.getElementById("phone");
-  VehicleDOM.department = document.getElementById("department");
-  VehicleDOM.company = document.getElementById("company");
+  VehicleDOM.dc = byId("dc");
+  VehicleDOM.fullName = byId("fullName");
+  VehicleDOM.employeeId = byId("employeeId");
+  VehicleDOM.phone = byId("phone");
+  VehicleDOM.department = byId("department");
+  VehicleDOM.company = byId("company");
 
-  VehicleDOM.vehicleType = document.getElementById("vehicleType");
-  VehicleDOM.brand = document.getElementById("brand");
-  VehicleDOM.carColor = document.getElementById("carColor");
-  VehicleDOM.status = document.getElementById("status");
-  VehicleDOM.vehicleId = document.getElementById("vehicleId");
-  VehicleDOM.registrationId = document.getElementById("registrationId");
+  VehicleDOM.vehicleType = byId("vehicleType");
+  VehicleDOM.brand = byId("brand");
+  VehicleDOM.carColor = byId("carColor");
+  VehicleDOM.status = byId("status");
+  VehicleDOM.vehicleId = byId("vehicleId");
+  VehicleDOM.registrationId = byId("registrationId");
 
-  VehicleDOM.vehicleImages = document.getElementById("vehicleImages");
-  VehicleDOM.bookImageBox = document.getElementById("bookImageBox");
+  VehicleDOM.vehicleImages = byId("vehicleImages");
+  VehicleDOM.bookImageBox = byId("bookImageBox");
+
+  logMissingElements([
+    "pinForm",
+    "pinInput",
+    "verifyBtn",
+    "errorBox",
+    "resultPanel",
+    "stickerNo",
+    "plateNumber",
+    "province",
+    "dc",
+    "fullName",
+    "employeeId",
+    "phone",
+    "department",
+    "company",
+    "vehicleType",
+    "brand",
+    "carColor",
+    "status",
+    "vehicleId",
+    "registrationId",
+    "vehicleImages",
+    "bookImageBox"
+  ]);
 }
-
 
 function bindVehicleEvents() {
-  VehicleDOM.pinForm.addEventListener("submit", handleVerifySubmit);
+  if (VehicleDOM.pinForm) {
+    VehicleDOM.pinForm.addEventListener("submit", handleVerifySubmit);
+  }
 
-  VehicleDOM.pinInput.addEventListener("input", function () {
-    VehicleDOM.pinInput.value = String(VehicleDOM.pinInput.value || "")
-      .replace(/[^0-9]/g, "")
-      .slice(0, 6);
+  if (VehicleDOM.pinInput) {
+    VehicleDOM.pinInput.addEventListener("input", function () {
+      VehicleDOM.pinInput.value = String(VehicleDOM.pinInput.value || "")
+        .replace(/[^0-9]/g, "")
+        .slice(0, 6);
 
-    hideError();
-  });
+      hideError();
+    });
+  }
 }
-
 
 async function handleVerifySubmit(event) {
   event.preventDefault();
 
   const token = VehicleState.token || getVehicleTokenFromUrl();
-  const pin = String(VehicleDOM.pinInput.value || "").trim();
+  const pin = String(VehicleDOM.pinInput ? VehicleDOM.pinInput.value : "").trim();
 
   if (!token) {
     showError("ไม่พบรหัสรถในลิงก์ QR Code");
@@ -99,7 +123,7 @@ async function handleVerifySubmit(event) {
 
   if (!VEHICLE_CONFIG.PIN_REGEX.test(pin)) {
     showError("กรุณากรอก PIN เป็นตัวเลข 6 หลัก");
-    VehicleDOM.pinInput.focus();
+    if (VehicleDOM.pinInput) VehicleDOM.pinInput.focus();
     return;
   }
 
@@ -117,7 +141,10 @@ async function handleVerifySubmit(event) {
     }
 
     renderVehicleResult(result.vehicle || {});
-    VehicleDOM.resultPanel.classList.add("show");
+
+    if (VehicleDOM.resultPanel) {
+      VehicleDOM.resultPanel.classList.add("show");
+    }
 
     await Swal.fire({
       icon: "success",
@@ -129,40 +156,47 @@ async function handleVerifySubmit(event) {
 
   } catch (err) {
     showError(err.message || "ตรวจสอบ PIN ไม่สำเร็จ");
-    VehicleDOM.resultPanel.classList.remove("show");
+
+    if (VehicleDOM.resultPanel) {
+      VehicleDOM.resultPanel.classList.remove("show");
+    }
 
   } finally {
     setLoading(false);
   }
 }
 
-
 function renderVehicleResult(vehicle) {
-  VehicleDOM.stickerNo.textContent = valueOrDash(vehicle.stickerLabel || vehicle.stickerNo);
-  VehicleDOM.plateNumber.textContent = valueOrDash(vehicle.plateNumber);
-  VehicleDOM.province.textContent = valueOrDash(vehicle.province);
+  setText(VehicleDOM.stickerNo, vehicle.stickerLabel || vehicle.stickerNo);
+  setText(VehicleDOM.plateNumber, vehicle.plateNumber);
+  setText(VehicleDOM.province, vehicle.province);
 
-  VehicleDOM.dc.textContent = valueOrDash(vehicle.dc);
-  VehicleDOM.fullName.textContent = valueOrDash(vehicle.fullName);
-  VehicleDOM.employeeId.textContent = valueOrDash(vehicle.employeeId);
-  VehicleDOM.phone.textContent = valueOrDash(vehicle.phone);
-  VehicleDOM.department.textContent = valueOrDash(vehicle.department);
-  VehicleDOM.company.textContent = valueOrDash(vehicle.company);
+  setText(VehicleDOM.dc, vehicle.dc);
+  setText(VehicleDOM.fullName, vehicle.fullName);
+  setText(VehicleDOM.employeeId, vehicle.employeeId);
+  setText(VehicleDOM.phone, vehicle.phone);
+  setText(VehicleDOM.department, vehicle.department);
+  setText(VehicleDOM.company, vehicle.company);
 
-  VehicleDOM.vehicleType.textContent = valueOrDash(vehicle.vehicleType);
-  VehicleDOM.brand.textContent = valueOrDash(vehicle.brand);
-  VehicleDOM.carColor.textContent = valueOrDash(vehicle.carColor);
-  VehicleDOM.status.textContent = valueOrDash(vehicle.status);
-  VehicleDOM.vehicleId.textContent = valueOrDash(vehicle.vehicleId);
-  VehicleDOM.registrationId.textContent = valueOrDash(vehicle.registrationId);
+  setText(VehicleDOM.vehicleType, vehicle.vehicleType);
+  setText(VehicleDOM.brand, vehicle.brand);
+  setText(VehicleDOM.carColor, vehicle.carColor);
+  setText(VehicleDOM.status, vehicle.status);
+  setText(VehicleDOM.vehicleId, vehicle.vehicleId);
+  setText(VehicleDOM.registrationId, vehicle.registrationId);
 
   renderVehicleImages(vehicle);
   renderBookImage(vehicle);
 }
 
-
 function renderVehicleImages(vehicle) {
-  const images = normalizeImageList(vehicle.vehicleImages || vehicle.vehicleImageData || vehicle.vehicleImageIds);
+  if (!VehicleDOM.vehicleImages) return;
+
+  const images = normalizeImageList(
+    vehicle.vehicleImages ||
+    vehicle.vehicleImageData ||
+    vehicle.vehicleImageIds
+  );
 
   VehicleDOM.vehicleImages.innerHTML = "";
 
@@ -173,7 +207,6 @@ function renderVehicleImages(vehicle) {
 
   images.forEach(function (img, index) {
     const src = getImageSrc(img);
-
     if (!src) return;
 
     const card = document.createElement("div");
@@ -206,9 +239,15 @@ function renderVehicleImages(vehicle) {
   }
 }
 
-
 function renderBookImage(vehicle) {
-  const src = getImageSrc(vehicle.vehicleBookImage || vehicle.bookImage || vehicle.vehicleBookImageDataUri || vehicle.vehicleBookImageUrl);
+  if (!VehicleDOM.bookImageBox) return;
+
+  const src = getImageSrc(
+    vehicle.vehicleBookImage ||
+    vehicle.bookImage ||
+    vehicle.vehicleBookImageDataUri ||
+    vehicle.vehicleBookImageUrl
+  );
 
   VehicleDOM.bookImageBox.innerHTML = "";
 
@@ -233,7 +272,6 @@ function renderBookImage(vehicle) {
   VehicleDOM.bookImageBox.appendChild(wrap);
 }
 
-
 function normalizeImageList(value) {
   if (!value) return [];
 
@@ -253,7 +291,6 @@ function normalizeImageList(value) {
   return [];
 }
 
-
 function getImageSrc(image) {
   if (!image) return "";
 
@@ -272,15 +309,11 @@ function getImageSrc(image) {
     (image.fileId ? driveImageUrlFromId(image.fileId) : "");
 }
 
-
 function driveImageUrlFromId(fileId) {
   const id = String(fileId || "").trim();
-
   if (!id) return "";
-
   return "https://lh5.googleusercontent.com/d/" + encodeURIComponent(id);
 }
-
 
 async function apiPost(path, body, timeoutMs) {
   const controller = new AbortController();
@@ -328,7 +361,6 @@ async function apiPost(path, body, timeoutMs) {
   }
 }
 
-
 function getApiBase() {
   const base = String(VEHICLE_CONFIG.API_BASE || "").trim().replace(/\/+$/, "");
 
@@ -339,33 +371,62 @@ function getApiBase() {
   return base;
 }
 
-
 function getVehicleTokenFromUrl() {
   const params = new URLSearchParams(window.location.search);
   return String(params.get(VEHICLE_CONFIG.TOKEN_PARAM) || "").trim();
 }
 
-
 function setLoading(isLoading) {
-  VehicleDOM.verifyBtn.disabled = isLoading;
-  VehicleDOM.pinInput.disabled = isLoading;
-  VehicleDOM.verifyBtn.textContent = isLoading ? "กำลังตรวจสอบ..." : "ตรวจสอบ";
+  setElementDisabled(VehicleDOM.verifyBtn, isLoading);
+  setElementDisabled(VehicleDOM.pinInput, isLoading);
+
+  if (VehicleDOM.verifyBtn) {
+    VehicleDOM.verifyBtn.textContent = isLoading ? "กำลังตรวจสอบ..." : "ตรวจสอบ";
+  }
 }
 
-
 function showError(message) {
+  if (!VehicleDOM.errorBox) {
+    alert(message || "เกิดข้อผิดพลาด");
+    return;
+  }
+
   VehicleDOM.errorBox.textContent = message || "เกิดข้อผิดพลาด";
   VehicleDOM.errorBox.classList.add("show");
 }
 
-
 function hideError() {
+  if (!VehicleDOM.errorBox) return;
+
   VehicleDOM.errorBox.textContent = "";
   VehicleDOM.errorBox.classList.remove("show");
 }
 
-
 function valueOrDash(value) {
   const text = String(value == null ? "" : value).trim();
   return text || "-";
+}
+
+function setText(element, value) {
+  if (!element) return;
+  element.textContent = valueOrDash(value);
+}
+
+function setElementDisabled(element, disabled) {
+  if (!element) return;
+  element.disabled = !!disabled;
+}
+
+function byId(id) {
+  return document.getElementById(id);
+}
+
+function logMissingElements(ids) {
+  const missing = ids.filter(function (id) {
+    return !document.getElementById(id);
+  });
+
+  if (missing.length) {
+    console.warn("vehicle.html ขาด element id:", missing.join(", "));
+  }
 }
