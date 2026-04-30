@@ -172,7 +172,7 @@ function renderVehicleResult(vehicle) {
   setText(VehicleDOM.stickerNo, vehicle.stickerLabel || vehicle.stickerNo);
   setText(VehicleDOM.plateNumber, vehicle.plateNumber);
   setText(VehicleDOM.province, vehicle.province);
- setText(VehicleDOM.timestamp, vehicle.timestamp);
+ setText(VehicleDOM.timestamp, formatDisplayDateTime(vehicle.timestamp));
   setText(VehicleDOM.dc, vehicle.dc);
   setText(VehicleDOM.fullName, vehicle.fullName);
   setText(VehicleDOM.employeeId, vehicle.employeeId);
@@ -431,4 +431,47 @@ function logMissingElements(ids) {
   if (missing.length) {
     console.warn("vehicle.html ขาด element id:", missing.join(", "));
   }
+}
+function formatDisplayDateTime(value) {
+  const text = String(value == null ? "" : value).trim();
+
+  if (!text) return "";
+
+  // dd/MM/yyyy HH:mm:ss อยู่แล้ว
+  if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(text)) {
+    return text;
+  }
+
+  // ISO string เช่น 2026-01-04T18:11:36.000Z
+  if (/^\d{4}-\d{2}-\d{2}T/.test(text)) {
+    const d = new Date(text);
+
+    if (!isNaN(d.getTime())) {
+      const pad = function (n) {
+        return String(n).padStart(2, "0");
+      };
+
+      return [
+        pad(d.getDate()),
+        "/",
+        pad(d.getMonth() + 1),
+        "/",
+        d.getFullYear(),
+        " ",
+        pad(d.getHours()),
+        ":",
+        pad(d.getMinutes()),
+        ":",
+        pad(d.getSeconds())
+      ].join("");
+    }
+  }
+
+  // yyyy-MM-dd HH:mm:ss
+  const m = text.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
+  if (m) {
+    return m[3] + "/" + m[2] + "/" + m[1] + " " + m[4] + ":" + m[5] + ":" + m[6];
+  }
+
+  return text;
 }
