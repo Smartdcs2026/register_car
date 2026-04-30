@@ -52,11 +52,12 @@ function cacheVehicleDom() {
   VehicleDOM.province = byId("province");
 
   VehicleDOM.dc = byId("dc");
-  VehicleDOM.fullName = byId("fullName");
-  VehicleDOM.employeeId = byId("employeeId");
-  VehicleDOM.phone = byId("phone");
-  VehicleDOM.department = byId("department");
-  VehicleDOM.company = byId("company");
+VehicleDOM.timestamp = byId("timestamp");
+VehicleDOM.fullName = byId("fullName");
+VehicleDOM.employeeId = byId("employeeId");
+VehicleDOM.phone = byId("phone");
+VehicleDOM.department = byId("department");
+VehicleDOM.company = byId("company");
 
   VehicleDOM.vehicleType = byId("vehicleType");
   VehicleDOM.brand = byId("brand");
@@ -68,30 +69,31 @@ function cacheVehicleDom() {
   VehicleDOM.vehicleImages = byId("vehicleImages");
   VehicleDOM.bookImageBox = byId("bookImageBox");
 
-  logMissingElements([
-    "pinForm",
-    "pinInput",
-    "verifyBtn",
-    "errorBox",
-    "resultPanel",
-    "stickerNo",
-    "plateNumber",
-    "province",
-    "dc",
-    "fullName",
-    "employeeId",
-    "phone",
-    "department",
-    "company",
-    "vehicleType",
-    "brand",
-    "carColor",
-    "status",
-    "vehicleId",
-    "registrationId",
-    "vehicleImages",
-    "bookImageBox"
-  ]);
+ logMissingElements([
+  "pinForm",
+  "pinInput",
+  "verifyBtn",
+  "errorBox",
+  "resultPanel",
+  "stickerNo",
+  "plateNumber",
+  "province",
+  "timestamp",
+  "dc",
+  "fullName",
+  "employeeId",
+  "phone",
+  "department",
+  "company",
+  "vehicleType",
+  "brand",
+  "carColor",
+  "status",
+  "vehicleId",
+  "registrationId",
+  "vehicleImages",
+  "bookImageBox"
+]);
 }
 
 function bindVehicleEvents() {
@@ -170,7 +172,7 @@ function renderVehicleResult(vehicle) {
   setText(VehicleDOM.stickerNo, vehicle.stickerLabel || vehicle.stickerNo);
   setText(VehicleDOM.plateNumber, vehicle.plateNumber);
   setText(VehicleDOM.province, vehicle.province);
-
+ setText(VehicleDOM.timestamp, vehicle.timestamp);
   setText(VehicleDOM.dc, vehicle.dc);
   setText(VehicleDOM.fullName, vehicle.fullName);
   setText(VehicleDOM.employeeId, vehicle.employeeId);
