@@ -1,17 +1,12 @@
 /************************************************************
  * Vehicle Registration System
- * vehicle.js v1
+ * vehicle.js v2
  *
  * ใช้สำหรับหน้า vehicle.html
  * เปิดข้อมูลรถจาก QR Code ด้วย Vehicle Token + PIN
+ * แสดงข้อมูลเจ้าของรถ + ข้อมูลรถ + รูปรถ + ภาพสำเนาทะเบียน/เล่มรถ
  ************************************************************/
 
-
-/**
- * =========================
- * CONFIG
- * =========================
- */
 
 const VEHICLE_CONFIG = {
   API_BASE: "https://registercar.somchaibutphon.workers.dev",
@@ -21,26 +16,15 @@ const VEHICLE_CONFIG = {
 };
 
 
-/**
- * =========================
- * STATE / DOM
- * =========================
- */
-
 const VehicleState = {
   token: ""
 };
+
 
 const VehicleDOM = {};
 
 document.addEventListener("DOMContentLoaded", initVehiclePage);
 
-
-/**
- * =========================
- * INIT
- * =========================
- */
 
 function initVehiclePage() {
   cacheVehicleDom();
@@ -73,12 +57,19 @@ function cacheVehicleDom() {
   VehicleDOM.dc = document.getElementById("dc");
   VehicleDOM.fullName = document.getElementById("fullName");
   VehicleDOM.employeeId = document.getElementById("employeeId");
+  VehicleDOM.phone = document.getElementById("phone");
   VehicleDOM.department = document.getElementById("department");
   VehicleDOM.company = document.getElementById("company");
+
   VehicleDOM.vehicleType = document.getElementById("vehicleType");
   VehicleDOM.brand = document.getElementById("brand");
   VehicleDOM.carColor = document.getElementById("carColor");
   VehicleDOM.status = document.getElementById("status");
+  VehicleDOM.vehicleId = document.getElementById("vehicleId");
+  VehicleDOM.registrationId = document.getElementById("registrationId");
+
+  VehicleDOM.vehicleImages = document.getElementById("vehicleImages");
+  VehicleDOM.bookImageBox = document.getElementById("bookImageBox");
 }
 
 
@@ -94,12 +85,6 @@ function bindVehicleEvents() {
   });
 }
 
-
-/**
- * =========================
- * SUBMIT
- * =========================
- */
 
 async function handleVerifySubmit(event) {
   event.preventDefault();
@@ -138,7 +123,7 @@ async function handleVerifySubmit(event) {
       icon: "success",
       title: "เปิดข้อมูลรถสำเร็จ",
       text: "ระบบแสดงข้อมูลรถตาม QR Code แล้ว",
-      timer: 1400,
+      timer: 1200,
       showConfirmButton: false
     });
 
@@ -152,12 +137,6 @@ async function handleVerifySubmit(event) {
 }
 
 
-/**
- * =========================
- * RENDER
- * =========================
- */
-
 function renderVehicleResult(vehicle) {
   VehicleDOM.stickerNo.textContent = valueOrDash(vehicle.stickerLabel || vehicle.stickerNo);
   VehicleDOM.plateNumber.textContent = valueOrDash(vehicle.plateNumber);
@@ -166,6 +145,7 @@ function renderVehicleResult(vehicle) {
   VehicleDOM.dc.textContent = valueOrDash(vehicle.dc);
   VehicleDOM.fullName.textContent = valueOrDash(vehicle.fullName);
   VehicleDOM.employeeId.textContent = valueOrDash(vehicle.employeeId);
+  VehicleDOM.phone.textContent = valueOrDash(vehicle.phone);
   VehicleDOM.department.textContent = valueOrDash(vehicle.department);
   VehicleDOM.company.textContent = valueOrDash(vehicle.company);
 
@@ -173,14 +153,134 @@ function renderVehicleResult(vehicle) {
   VehicleDOM.brand.textContent = valueOrDash(vehicle.brand);
   VehicleDOM.carColor.textContent = valueOrDash(vehicle.carColor);
   VehicleDOM.status.textContent = valueOrDash(vehicle.status);
+  VehicleDOM.vehicleId.textContent = valueOrDash(vehicle.vehicleId);
+  VehicleDOM.registrationId.textContent = valueOrDash(vehicle.registrationId);
+
+  renderVehicleImages(vehicle);
+  renderBookImage(vehicle);
 }
 
 
-/**
- * =========================
- * API
- * =========================
- */
+function renderVehicleImages(vehicle) {
+  const images = normalizeImageList(vehicle.vehicleImages || vehicle.vehicleImageData || vehicle.vehicleImageIds);
+
+  VehicleDOM.vehicleImages.innerHTML = "";
+
+  if (!images.length) {
+    VehicleDOM.vehicleImages.innerHTML = '<div class="emptyImageBox">ไม่พบรูปรถ</div>';
+    return;
+  }
+
+  images.forEach(function (img, index) {
+    const src = getImageSrc(img);
+
+    if (!src) return;
+
+    const card = document.createElement("div");
+    card.className = "imageCard";
+
+    const image = document.createElement("img");
+    image.src = src;
+    image.alt = "รูปรถที่ " + (index + 1);
+    image.loading = "lazy";
+
+    image.onerror = function () {
+      card.remove();
+
+      if (!VehicleDOM.vehicleImages.children.length) {
+        VehicleDOM.vehicleImages.innerHTML = '<div class="emptyImageBox">โหลดรูปรถไม่สำเร็จ</div>';
+      }
+    };
+
+    const caption = document.createElement("div");
+    caption.className = "imageCaption";
+    caption.textContent = "รูปรถที่ " + (index + 1);
+
+    card.appendChild(image);
+    card.appendChild(caption);
+    VehicleDOM.vehicleImages.appendChild(card);
+  });
+
+  if (!VehicleDOM.vehicleImages.children.length) {
+    VehicleDOM.vehicleImages.innerHTML = '<div class="emptyImageBox">ไม่พบรูปรถ</div>';
+  }
+}
+
+
+function renderBookImage(vehicle) {
+  const src = getImageSrc(vehicle.vehicleBookImage || vehicle.bookImage || vehicle.vehicleBookImageDataUri || vehicle.vehicleBookImageUrl);
+
+  VehicleDOM.bookImageBox.innerHTML = "";
+
+  if (!src) {
+    VehicleDOM.bookImageBox.innerHTML = '<div class="emptyImageBox">ไม่พบภาพสำเนาทะเบียนรถ / เล่มรถ</div>';
+    return;
+  }
+
+  const wrap = document.createElement("div");
+  wrap.className = "bookImageWrap";
+
+  const image = document.createElement("img");
+  image.src = src;
+  image.alt = "ภาพสำเนาทะเบียนรถ / เล่มรถ";
+  image.loading = "lazy";
+
+  image.onerror = function () {
+    VehicleDOM.bookImageBox.innerHTML = '<div class="emptyImageBox">โหลดภาพสำเนาทะเบียนรถ / เล่มรถ ไม่สำเร็จ</div>';
+  };
+
+  wrap.appendChild(image);
+  VehicleDOM.bookImageBox.appendChild(wrap);
+}
+
+
+function normalizeImageList(value) {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split("|")
+      .map(function (item) {
+        return item.trim();
+      })
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+
+function getImageSrc(image) {
+  if (!image) return "";
+
+  if (typeof image === "string") {
+    if (/^data:image\//i.test(image)) return image;
+    if (/^https?:\/\//i.test(image)) return image;
+    return driveImageUrlFromId(image);
+  }
+
+  return image.dataUri ||
+    image.dataUrl ||
+    image.imageDataUri ||
+    image.imageUrl ||
+    image.url ||
+    image.src ||
+    (image.fileId ? driveImageUrlFromId(image.fileId) : "");
+}
+
+
+function driveImageUrlFromId(fileId) {
+  const id = String(fileId || "").trim();
+
+  if (!id) return "";
+
+  return "https://lh5.googleusercontent.com/d/" + encodeURIComponent(id);
+}
+
 
 async function apiPost(path, body, timeoutMs) {
   const controller = new AbortController();
@@ -239,12 +339,6 @@ function getApiBase() {
   return base;
 }
 
-
-/**
- * =========================
- * HELPERS
- * =========================
- */
 
 function getVehicleTokenFromUrl() {
   const params = new URLSearchParams(window.location.search);
