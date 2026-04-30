@@ -1,6 +1,6 @@
 /************************************************************
  * Vehicle Registration System
- * app.js v3
+ * app.js v4
  *
  * รองรับ:
  * - Consent ก่อนเข้าฟอร์ม
@@ -11,6 +11,7 @@
  * - อัปโหลดรูป / เปิดกล้อง / ย่อรูปก่อนส่ง
  * - SweetAlert ตรวจสอบข้อมูลก่อนบันทึก
  * - ส่งข้อมูลไป /api/save
+ * - ตรวจสอบว่าต้องได้ PDF URL กลับมา
  * - แสดง PDF, QR, PIN หลังบันทึกสำเร็จ
  ************************************************************/
 
@@ -22,13 +23,6 @@
  */
 
 const APP_CONFIG = {
-  /**
-   * แก้ตรงนี้ให้เป็น URL ของ Cloudflare Worker ของคุณ
-   * ตัวอย่าง:
-   * API_BASE: "https://vehicle-register-api.smartdcs2026.workers.dev",
-   *
-   * ห้ามใส่ /api/save หรือ /api/options ต่อท้าย
-   */
   API_BASE: "https://registercar.somchaibutphon.workers.dev",
 
   CONSENT_VERSION: "PDPA-VEHICLE-REG-001",
@@ -42,6 +36,11 @@ const APP_CONFIG = {
   IMAGE_OUTPUT_TYPE: "image/jpeg",
 
   OTHER_VALUE: "อื่นๆ",
+
+  API_TIMEOUT_GET_MS: 60000,
+  API_TIMEOUT_SAVE_MS: 240000,
+
+  REQUIRE_PDF_SUCCESS: true,
 
   VALIDATION: {
     PLATE: /^[ก-ฮ0-9]+$/,
@@ -106,6 +105,7 @@ document.addEventListener("DOMContentLoaded", initApp);
 
 async function initApp() {
   cacheDom();
+  assertRequiredDom();
   bindEvents();
 
   showConsentScreen();
@@ -153,6 +153,44 @@ function cacheDom() {
     .filter(function (select) {
       return !select.closest(".vehicleCard");
     });
+}
+
+
+function assertRequiredDom() {
+  const required = [
+    ["consentScreen", DOM.consentScreen],
+    ["appScreen", DOM.appScreen],
+    ["consentCheck", DOM.consentCheck],
+    ["acceptConsentBtn", DOM.acceptConsentBtn],
+    ["vehicleForm", DOM.form],
+    ["apiStatusDot", DOM.apiStatusDot],
+    ["apiStatusText", DOM.apiStatusText],
+    ["addVehicleBtn", DOM.addVehicleBtn],
+    ["vehicleList", DOM.vehicleList],
+    ["vehicleCardTemplate", DOM.vehicleCardTemplate],
+    ["imageItemTemplate", DOM.imageItemTemplate],
+    ["bookImageItemTemplate", DOM.bookImageItemTemplate],
+    ["resetBtn", DOM.resetBtn],
+    ["submitBtn", DOM.submitBtn],
+    ["cameraModal", DOM.cameraModal],
+    ["cameraVideo", DOM.cameraVideo],
+    ["cameraCanvas", DOM.cameraCanvas],
+    ["closeCameraBtn", DOM.closeCameraBtn],
+    ["switchCameraBtn", DOM.switchCameraBtn],
+    ["captureBtn", DOM.captureBtn]
+  ];
+
+  const missing = required
+    .filter(function (item) {
+      return !item[1];
+    })
+    .map(function (item) {
+      return item[0];
+    });
+
+  if (missing.length) {
+    throw new Error("index.html ขาด element สำคัญ: " + missing.join(", "));
+  }
 }
 
 
@@ -271,29 +309,67 @@ function getApiBase() {
 }
 
 
-async function apiGet(path) {
-  const response = await fetch(getApiBase() + path, {
-    method: "GET",
-    headers: {
-      "Accept": "application/json"
-    }
-  });
+async function apiGet(path, timeoutMs) {
+  const controller = new AbortController();
 
-  return parseApiResponse(response);
+  const timeout = setTimeout(function () {
+    controller.abort();
+  }, timeoutMs || APP_CONFIG.API_TIMEOUT_GET_MS);
+
+  try {
+    const response = await fetch(getApiBase() + path, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json"
+      },
+      signal: controller.signal
+    });
+
+    return await parseApiResponse(response);
+
+  } catch (err) {
+    if (err && err.name === "AbortError") {
+      throw new Error("เชื่อมต่อ API นานเกินไป กรุณาตรวจสอบ Worker หรือ Apps Script");
+    }
+
+    throw err;
+
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 
-async function apiPost(path, body) {
-  const response = await fetch(getApiBase() + path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json;charset=utf-8",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify(body || {})
-  });
+async function apiPost(path, body, timeoutMs) {
+  const controller = new AbortController();
 
-  return parseApiResponse(response);
+  const timeout = setTimeout(function () {
+    controller.abort();
+  }, timeoutMs || APP_CONFIG.API_TIMEOUT_SAVE_MS);
+
+  try {
+    const response = await fetch(getApiBase() + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(body || {}),
+      signal: controller.signal
+    });
+
+    return await parseApiResponse(response);
+
+  } catch (err) {
+    if (err && err.name === "AbortError") {
+      throw new Error("ระบบใช้เวลาบันทึกนานเกินไป กรุณาตรวจสอบขนาดรูปภาพ, Worker, Apps Script หรือขั้นตอนสร้าง PDF");
+    }
+
+    throw err;
+
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 
@@ -320,7 +396,7 @@ async function checkApiHealth() {
   setApiStatus("checking", "กำลังตรวจสอบระบบ...");
 
   try {
-    const data = await apiGet("/health");
+    const data = await apiGet("/health", APP_CONFIG.API_TIMEOUT_GET_MS);
 
     if (data && data.ok) {
       setApiStatus("online", "ระบบพร้อมใช้งาน");
@@ -338,7 +414,7 @@ async function loadOptions() {
   try {
     setPersonSelectsLoading(true);
 
-    const data = await apiGet("/api/options");
+    const data = await apiGet("/api/options", APP_CONFIG.API_TIMEOUT_GET_MS);
 
     if (!data || !data.ok || !data.options) {
       throw new Error(data.message || "โหลดตัวเลือกไม่สำเร็จ");
@@ -368,7 +444,7 @@ async function loadOptions() {
 
 
 function normalizeOptions(options) {
-  const normalized = {
+  return {
     dc: ensureOtherOption(options.dc),
     department: ensureOtherOption(options.department),
     company: ensureOtherOption(options.company),
@@ -377,13 +453,12 @@ function normalizeOptions(options) {
     carColor: ensureOtherOption(options.carColor),
     province: ensureOtherOption(options.province)
   };
-
-  return normalized;
 }
 
 
 function ensureOtherOption(values) {
   const arr = Array.isArray(values) ? values.map(normalizeText).filter(Boolean) : [];
+
   const withoutOther = arr.filter(function (value) {
     return value !== APP_CONFIG.OTHER_VALUE;
   });
@@ -1445,11 +1520,13 @@ async function handleSubmit(event) {
 
     const result = await apiPost("/api/save", {
       payload: payload
-    });
+    }, APP_CONFIG.API_TIMEOUT_SAVE_MS);
 
     if (!result || !result.ok) {
-      throw new Error(result.message || "บันทึกข้อมูลไม่สำเร็จ");
+      throw new Error(result && result.message ? result.message : "บันทึกข้อมูลไม่สำเร็จ");
     }
+
+    validatePdfResult(result);
 
     await showSaveSuccess(result);
     resetFormAfterSave();
@@ -1457,7 +1534,7 @@ async function handleSubmit(event) {
   } catch (err) {
     await Swal.fire({
       icon: "error",
-      title: "ไม่สามารถบันทึกข้อมูลได้",
+      title: "ไม่สามารถบันทึกข้อมูลได้ครบถ้วน",
       text: err.message || "กรุณาตรวจสอบข้อมูลและลองใหม่อีกครั้ง"
     });
 
@@ -1465,6 +1542,29 @@ async function handleSubmit(event) {
     AppState.isSubmitting = false;
     setSubmitState(false);
     hideLoading();
+  }
+}
+
+
+function validatePdfResult(result) {
+  if (!APP_CONFIG.REQUIRE_PDF_SUCCESS) return;
+
+  const pdfUrl = normalizeText(result && result.pdfUrl);
+  const pdfStatus = normalizeText(result && result.pdfStatus);
+  const pdfError = normalizeText(result && result.pdfError);
+
+  if (!pdfUrl) {
+    throw new Error(
+      "ข้อมูลอาจถูกบันทึกแล้ว แต่ระบบไม่ได้รับลิงก์ PDF กลับมา กรุณาตรวจสอบ Code.gs / Executions / คอลัมน์ PDF Status" +
+      (pdfError ? " รายละเอียด: " + pdfError : "")
+    );
+  }
+
+  if (pdfStatus && pdfStatus !== "SUCCESS") {
+    throw new Error(
+      "ข้อมูลอาจถูกบันทึกแล้ว แต่สร้าง PDF ไม่สำเร็จ สถานะ: " + pdfStatus +
+      (pdfError ? " รายละเอียด: " + pdfError : "")
+    );
   }
 }
 
@@ -1562,9 +1662,9 @@ function detailRowHtml(label, value) {
 async function showSaveSuccess(result) {
   await Swal.fire({
     icon: "success",
-    title: "บันทึกข้อมูลสำเร็จ",
+    title: "บันทึกข้อมูลและสร้าง PDF สำเร็จ",
     html: buildSaveSuccessHtml(result),
-    width: 760,
+    width: 780,
     confirmButtonText: "ตกลง"
   });
 }
@@ -1572,6 +1672,23 @@ async function showSaveSuccess(result) {
 
 function buildSaveSuccessHtml(result) {
   const vehicles = Array.isArray(result.vehicles) ? result.vehicles : [];
+
+  const pdfHtml = result.pdfUrl
+    ? [
+        '<p><b>PDF:</b><br>',
+          '<a class="resultLink" href="', escapeAttribute(result.pdfUrl), '" target="_blank" rel="noopener">',
+            'เปิดไฟล์ PDF สรุปข้อมูล',
+          '</a>',
+        '</p>'
+      ].join("")
+    : [
+        '<p style="color:#dc2626;font-weight:800;">',
+          '<b>PDF:</b> ไม่พบลิงก์ PDF',
+        '</p>',
+        result.pdfError
+          ? '<p style="color:#dc2626;">' + escapeHtml(result.pdfError) + '</p>'
+          : ''
+      ].join("");
 
   const vehicleHtml = vehicles.map(function (vehicle) {
     return [
@@ -1596,6 +1713,15 @@ function buildSaveSuccessHtml(result) {
               'เปิดรูป QR Code',
             '</a>',
           '</p>',
+          vehicle.vehicleFolderUrl
+            ? [
+                '<p><b>โฟลเดอร์รูปรถ:</b><br>',
+                  '<a class="resultLink" href="', escapeAttribute(vehicle.vehicleFolderUrl), '" target="_blank" rel="noopener">',
+                    'เปิดโฟลเดอร์รูปรถ',
+                  '</a>',
+                '</p>'
+              ].join("")
+            : '',
         '</div>',
       '</div>'
     ].join("");
@@ -1608,11 +1734,7 @@ function buildSaveSuccessHtml(result) {
         '<p><b>Registration ID:</b> ', escapeHtml(result.registrationId || "-"), '</p>',
         '<p><b>Person ID:</b> ', escapeHtml(result.personId || "-"), '</p>',
         '<p><b>เวลาบันทึก:</b> ', escapeHtml(result.timestamp || "-"), '</p>',
-        '<p><b>PDF:</b><br>',
-          '<a class="resultLink" href="', escapeAttribute(result.pdfUrl || "#"), '" target="_blank" rel="noopener">',
-            'เปิดไฟล์ PDF สรุปข้อมูล',
-          '</a>',
-        '</p>',
+        pdfHtml,
       '</div>',
 
       '<div class="saveVehicleResultList">',
