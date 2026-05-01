@@ -1234,47 +1234,92 @@ function calculateFitSize(width, height, maxWidth, maxHeight) {
 
 function canvasToBlob(canvas, mimeType, quality) {
   return new Promise(function (resolve, reject) {
-    canvas.toBlob(
-      function (blob) {
-        if (!blob) {
-          reject(new Error("สร้างไฟล์รูปภาพไม่สำเร็จ"));
-          return;
-        }
+    if (canvas.toBlob) {
+      canvas.toBlob(
+        function (blob) {
+          if (!blob) {
+            reject(new Error("สร้างไฟล์รูปภาพไม่สำเร็จ"));
+            return;
+          }
 
-        resolve(blob);
-      },
-      mimeType,
-      quality
-    );
+          resolve(blob);
+        },
+        mimeType,
+        quality
+      );
+
+      return;
+    }
+
+    /*
+     * fallback สำหรับ Safari/iOS รุ่นเก่า
+     */
+    try {
+      const dataUrl = canvas.toDataURL(mimeType || "image/jpeg", quality || 0.8);
+      resolve(dataUrlToBlob(dataUrl));
+    } catch (err) {
+      reject(new Error("Browser นี้ไม่รองรับการสร้างไฟล์จากภาพ"));
+    }
   });
 }
 
 
-function blobToDataUrl(blob) {
-  return new Promise(function (resolve, reject) {
-    const reader = new FileReader();
+function dataUrlToBlob(dataUrl) {
+  const parts = String(dataUrl || "").split(",");
+  const meta = parts[0] || "";
+  const base64 = parts[1] || "";
 
-    reader.onload = function () {
-      resolve(String(reader.result || ""));
-    };
+  const mimeMatch = meta.match(/data:([^;]+);base64/i);
+  const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
 
-    reader.onerror = function () {
-      reject(new Error("แปลงรูปภาพไม่สำเร็จ"));
-    };
+  const binary = atob(base64);
+  const length = binary.length;
+  const bytes = new Uint8Array(length);
 
-    reader.readAsDataURL(blob);
+  for (let i = 0; i < length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new Blob([bytes], {
+    type: mimeType
   });
 }
-
 
 /**
  * =========================
  * CAMERA
  * =========================
+ *
+ * Hybrid Camera Strategy:
+ * 1. ใช้ getUserMedia() เป็นหลัก
+ * 2. ถ้า iPhone / Safari / Browser บางตัวเปิดไม่ได้ ให้ fallback ไปใช้ native file capture
+ * 3. ต้องใช้งานผ่าน HTTPS หรือ localhost เท่านั้น
  */
 
 async function openCamera(target) {
   AppState.camera.target = target;
+
+  if (!target) {
+    await showCameraError_("ไม่พบตำแหน่งที่จะบันทึกรูปภาพ");
+    return;
+  }
+
+  /*
+   * getUserMedia ใช้ได้เฉพาะ HTTPS / localhost
+   * ถ้าไม่ใช่ secure context ให้ fallback ไป native camera ทันที
+   */
+  if (!isCameraSecureContext_()) {
+    await fallbackNativeCameraCapture_(target);
+    return;
+  }
+
+  /*
+   * ถ้า browser ไม่มี mediaDevices/getUserMedia ให้ fallback ทันที
+   */
+  if (!supportsLiveCamera_()) {
+    await fallbackNativeCameraCapture_(target);
+    return;
+  }
 
   try {
     await startCamera();
@@ -1283,13 +1328,25 @@ async function openCamera(target) {
     DOM.cameraModal.setAttribute("aria-hidden", "false");
 
   } catch (err) {
-    await Swal.fire({
-      icon: "error",
-      title: "เปิดกล้องไม่สำเร็จ",
-      text: err.message || "กรุณาตรวจสอบสิทธิ์การใช้กล้องของ Browser"
+    /*
+     * iPhone/Safari บางเครื่อง reject constraints เช่น environment
+     * จึง fallback ไป native file capture แทน เพื่อให้ใช้งานได้จริง
+     */
+    await stopCamera();
+
+    const useFallback = await Swal.fire({
+      icon: "warning",
+      title: "เปิดกล้องแบบ Live ไม่สำเร็จ",
+      text: buildCameraErrorMessage_(err),
+      showCancelButton: true,
+      confirmButtonText: "เปิดกล้องของเครื่องแทน",
+      cancelButtonText: "ยกเลิก",
+      reverseButtons: true
     });
 
-    await stopCamera();
+    if (useFallback.isConfirmed) {
+      await fallbackNativeCameraCapture_(target);
+    }
   }
 }
 
@@ -1297,39 +1354,117 @@ async function openCamera(target) {
 async function startCamera() {
   await stopCamera();
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    throw new Error("Browser นี้ไม่รองรับการเปิดกล้อง");
+  if (!supportsLiveCamera_()) {
+    throw new Error("Browser นี้ไม่รองรับ navigator.mediaDevices.getUserMedia()");
   }
 
-  const constraints = {
-    video: {
-      facingMode: AppState.camera.facingMode,
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
+  const constraintsList = buildCameraConstraintsList_();
+
+  let lastError = null;
+
+  for (let i = 0; i < constraintsList.length; i++) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraintsList[i]);
+
+      AppState.camera.stream = stream;
+
+      DOM.cameraVideo.setAttribute("playsinline", "true");
+      DOM.cameraVideo.setAttribute("autoplay", "true");
+      DOM.cameraVideo.muted = true;
+      DOM.cameraVideo.srcObject = stream;
+
+      await DOM.cameraVideo.play();
+
+      return stream;
+
+    } catch (err) {
+      lastError = err;
+      await stopCamera();
+    }
+  }
+
+  throw lastError || new Error("ไม่สามารถเปิดกล้องได้");
+}
+
+
+function buildCameraConstraintsList_() {
+  const facingMode = AppState.camera.facingMode || "environment";
+
+  /*
+   * เรียงจากเข้มไปอ่อน:
+   * - exact อาจ fail บน iPhone บางรุ่น
+   * - ideal ยืดหยุ่นกว่า
+   * - video:true เป็น fallback กว้างสุด
+   */
+  if (facingMode === "environment") {
+    return [
+      {
+        audio: false,
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      },
+      {
+        audio: false,
+        video: {
+          facingMode: "environment"
+        }
+      },
+      {
+        audio: false,
+        video: true
+      }
+    ];
+  }
+
+  return [
+    {
+      audio: false,
+      video: {
+        facingMode: { ideal: "user" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
     },
-    audio: false
-  };
-
-  const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-  AppState.camera.stream = stream;
-  DOM.cameraVideo.srcObject = stream;
-
-  await DOM.cameraVideo.play();
+    {
+      audio: false,
+      video: {
+        facingMode: "user"
+      }
+    },
+    {
+      audio: false,
+      video: true
+    }
+  ];
 }
 
 
 async function stopCamera() {
   if (AppState.camera.stream) {
     AppState.camera.stream.getTracks().forEach(function (track) {
-      track.stop();
+      try {
+        track.stop();
+      } catch (err) {
+        // ignore
+      }
     });
   }
 
   AppState.camera.stream = null;
 
   if (DOM.cameraVideo) {
+    try {
+      DOM.cameraVideo.pause();
+    } catch (err) {
+      // ignore
+    }
+
     DOM.cameraVideo.srcObject = null;
+    DOM.cameraVideo.removeAttribute("src");
+    DOM.cameraVideo.load();
   }
 }
 
@@ -1348,13 +1483,29 @@ async function switchCamera() {
     AppState.camera.facingMode === "environment" ? "user" : "environment";
 
   try {
+    showLoading("กำลังสลับกล้อง...");
     await startCamera();
+
   } catch (err) {
-    await Swal.fire({
-      icon: "error",
+    await stopCamera();
+
+    const result = await Swal.fire({
+      icon: "warning",
       title: "สลับกล้องไม่สำเร็จ",
-      text: err.message || "กรุณาลองใหม่อีกครั้ง"
+      text: buildCameraErrorMessage_(err),
+      showCancelButton: true,
+      confirmButtonText: "ใช้กล้องของเครื่องแทน",
+      cancelButtonText: "ปิด",
+      reverseButtons: true
     });
+
+    if (result.isConfirmed && AppState.camera.target) {
+      await closeCamera();
+      await fallbackNativeCameraCapture_(AppState.camera.target);
+    }
+
+  } finally {
+    hideLoading();
   }
 }
 
@@ -1385,7 +1536,10 @@ async function captureCameraImage() {
   canvas.width = width;
   canvas.height = height;
 
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", {
+    alpha: false
+  });
+
   ctx.drawImage(video, 0, 0, width, height);
 
   try {
@@ -1397,19 +1551,14 @@ async function captureCameraImage() {
       APP_CONFIG.IMAGE_QUALITY
     );
 
-    const file = new File(
-      [blob],
-      "camera_" + formatDateForFileName(new Date()) + ".jpg",
-      { type: APP_CONFIG.IMAGE_OUTPUT_TYPE }
-    );
-
-    const compressed = await compressImageFile(file);
+    const base64 = await blobToDataUrl(blob);
+    const previewUrl = URL.createObjectURL(blob);
 
     updateImageData(target.vehicleId, target.imageType, target.imageId, {
-      fileName: file.name,
-      mimeType: compressed.mimeType,
-      base64: compressed.base64,
-      previewUrl: compressed.previewUrl
+      fileName: "camera_" + formatDateForFileName(new Date()) + ".jpg",
+      mimeType: APP_CONFIG.IMAGE_OUTPUT_TYPE,
+      base64: base64,
+      previewUrl: previewUrl
     });
 
     renderVehicles();
@@ -1427,6 +1576,139 @@ async function captureCameraImage() {
   }
 }
 
+
+/**
+ * Native Camera Fallback
+ * สำหรับ iPhone / Safari / Browser ที่ getUserMedia เปิดไม่ได้
+ */
+async function fallbackNativeCameraCapture_(target) {
+  return new Promise(function (resolve) {
+    const input = document.createElement("input");
+
+    input.type = "file";
+    input.accept = "image/*";
+    input.capture = AppState.camera.facingMode === "user" ? "user" : "environment";
+    input.style.position = "fixed";
+    input.style.left = "-9999px";
+    input.style.top = "-9999px";
+    input.style.opacity = "0";
+
+    document.body.appendChild(input);
+
+    input.addEventListener("change", async function () {
+      const file = input.files && input.files[0];
+
+      try {
+        if (!file) {
+          resolve(false);
+          return;
+        }
+
+        if (!file.type || !file.type.startsWith("image/")) {
+          await Swal.fire({
+            icon: "error",
+            title: "ไฟล์ไม่ถูกต้อง",
+            text: "กรุณาเลือกหรือถ่ายเป็นไฟล์รูปภาพเท่านั้น"
+          });
+
+          resolve(false);
+          return;
+        }
+
+        showLoading("กำลังประมวลผลรูปภาพ...");
+
+        const compressed = await compressImageFile(file);
+
+        updateImageData(target.vehicleId, target.imageType, target.imageId, {
+          fileName: file.name || ("camera_" + formatDateForFileName(new Date()) + ".jpg"),
+          mimeType: compressed.mimeType,
+          base64: compressed.base64,
+          previewUrl: compressed.previewUrl
+        });
+
+        renderVehicles();
+        resolve(true);
+
+      } catch (err) {
+        await Swal.fire({
+          icon: "error",
+          title: "อ่านรูปภาพไม่สำเร็จ",
+          text: err.message || "กรุณาลองใหม่อีกครั้ง"
+        });
+
+        resolve(false);
+
+      } finally {
+        hideLoading();
+
+        try {
+          input.remove();
+        } catch (err) {
+          // ignore
+        }
+      }
+    }, { once: true });
+
+    /*
+     * ต้องถูกเรียกจาก user gesture เช่น click ปุ่ม เปิดกล้อง
+     * iPhone จะยอมเปิด native camera ได้เสถียรกว่า
+     */
+    input.click();
+  });
+}
+
+
+function supportsLiveCamera_() {
+  return !!(
+    navigator.mediaDevices &&
+    typeof navigator.mediaDevices.getUserMedia === "function"
+  );
+}
+
+
+function isCameraSecureContext_() {
+  return window.isSecureContext === true ||
+    location.protocol === "https:" ||
+    location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1";
+}
+
+
+function buildCameraErrorMessage_(err) {
+  const name = err && err.name ? err.name : "";
+  const message = err && err.message ? err.message : "";
+
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+    return "ผู้ใช้ไม่อนุญาตให้ใช้กล้อง หรือ Browser ปิดสิทธิ์กล้องไว้ กรุณาอนุญาตสิทธิ์กล้องในการตั้งค่า Browser";
+  }
+
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+    return "ไม่พบอุปกรณ์กล้องในเครื่องนี้";
+  }
+
+  if (name === "NotReadableError" || name === "TrackStartError") {
+    return "กล้องอาจถูกใช้งานโดยแอปอื่นอยู่ กรุณาปิดแอปกล้องหรือแอปอื่นแล้วลองใหม่";
+  }
+
+  if (name === "OverconstrainedError" || name === "ConstraintNotSatisfiedError") {
+    return "กล้องไม่รองรับค่าที่ระบบร้องขอ ระบบจะลองเปิดด้วยวิธีอื่นแทน";
+  }
+
+  if (!isCameraSecureContext_()) {
+    return "การเปิดกล้องต้องใช้งานผ่าน HTTPS หรือ localhost เท่านั้น";
+  }
+
+  return message || "ไม่สามารถเปิดกล้องได้";
+}
+
+
+async function showCameraError_(message) {
+  await Swal.fire({
+    icon: "error",
+    title: "เปิดกล้องไม่สำเร็จ",
+    text: message || "กรุณาตรวจสอบสิทธิ์กล้องของ Browser"
+  });
+}
 
 /**
  * =========================
