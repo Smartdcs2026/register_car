@@ -1045,12 +1045,18 @@ function createImageItemNode(config) {
   const preview = node.querySelector(".imagePreview");
   const emptyPreview = node.querySelector(".emptyPreview");
   const fileInput = node.querySelector(".imageFileInput");
-  if (fileInput) {
+if (fileInput) {
   fileInput.setAttribute("accept", "image/*");
-  fileInput.setAttribute("capture", "environment");
-}
-  const cameraBtn = node.querySelector(".cameraOpenBtn");
 
+  /*
+   * สำคัญ:
+   * ห้ามใส่ capture ในปุ่มอัปโหลด
+   * เพราะจะทำให้มือถือ โดยเฉพาะ iPhone/Android เปิดกล้องทันที
+   * ปุ่มอัปโหลดควรเลือกไฟล์/เลือกรูปจากเครื่อง
+   */
+  fileInput.removeAttribute("capture");
+}
+const cameraBtn = node.querySelector(".cameraOpenBtn");
   label.textContent = config.label;
 
   if (config.image.base64) {
@@ -1248,8 +1254,8 @@ function canvasToBlob(canvas, mimeType, quality) {
 
           resolve(blob);
         },
-        mimeType,
-        quality
+        mimeType || "image/jpeg",
+        typeof quality === "number" ? quality : 0.8
       );
 
       return;
@@ -1259,12 +1265,43 @@ function canvasToBlob(canvas, mimeType, quality) {
      * fallback สำหรับ Safari/iOS รุ่นเก่า
      */
     try {
-      const dataUrl = canvas.toDataURL(mimeType || "image/jpeg", quality || 0.8);
+      const dataUrl = canvas.toDataURL(
+        mimeType || "image/jpeg",
+        typeof quality === "number" ? quality : 0.8
+      );
+
       resolve(dataUrlToBlob(dataUrl));
+
     } catch (err) {
       reject(new Error("Browser นี้ไม่รองรับการสร้างไฟล์จากภาพ"));
     }
   });
+}
+
+
+function blobToDataUrl(blob) {
+  return new Promise(function (resolve, reject) {
+    const reader = new FileReader();
+
+    reader.onload = function () {
+      resolve(String(reader.result || ""));
+    };
+
+    reader.onerror = function () {
+      reject(new Error("แปลงรูปภาพไม่สำเร็จ"));
+    };
+
+    reader.readAsDataURL(blob);
+  });
+}
+
+
+/*
+ * กันปัญหา cache หรือโค้ดบางจุดเรียกชื่อผิดเป็น BlobToDataUrl
+ * JavaScript แยกตัวพิมพ์เล็ก/ใหญ่ จึงทำ alias ไว้ให้ปลอดภัย
+ */
+function blobToDataUrl(blob) {
+  return blobToDataUrl(blob);
 }
 
 
@@ -1288,7 +1325,6 @@ function dataUrlToBlob(dataUrl) {
     type: mimeType
   });
 }
-
 /**
  * =========================
  * CAMERA
@@ -1595,8 +1631,8 @@ async function fallbackNativeCameraCapture_(target) {
     const input = document.createElement("input");
 
     input.type = "file";
-    input.accept = "image/*";
-    input.capture = AppState.camera.facingMode === "user" ? "user" : "environment";
+input.accept = "image/*";
+input.capture = AppState.camera.facingMode === "user" ? "user" : "environment";
     input.style.position = "fixed";
     input.style.left = "-9999px";
     input.style.top = "-9999px";
