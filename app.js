@@ -1981,7 +1981,7 @@ async function handleSubmit(event) {
     AppState.isSubmitting = true;
     setSubmitState(true);
     renderVehicles();
-    showLoading("กำลังบันทึกข้อมูล สร้างเอกสาร และส่ง Email...");
+    showLoading("กำลังบันทึกข้อมูล และ สร้างเอกสาร ");
 
     const result = await apiPost("/api/save", {
       payload: payload
