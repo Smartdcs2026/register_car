@@ -1,13 +1,19 @@
 /************************************************************
  * Vehicle Registration System
- * app.js v6
+ * app.js v12
  *
  * Version:
- * - Public user success screen
+ * - Consent screen
+ * - Dynamic dropdown from Cloudflare Worker / Apps Script
+ * - Brand dropdown depends on vehicle type
+ * - Vehicle model support, auto uppercase English
+ * - Max 3 vehicles per person
+ * - Max 3 vehicle images per vehicle
+ * - 1 vehicle book / registration image per vehicle
+ * - Upload / Camera / Image compression
+ * - Compact SweetAlert before save
+ * - Compact SweetAlert save success
  * - Hide PDF URL / QR URL / PIN from normal users
- * - Show registration summary + Sticker No
- * - Show PDF / Email status with clear badge
- * - Fallback result fields to prevent "-" when backend sends nested data
  ************************************************************/
 
 
@@ -62,6 +68,7 @@ const AppState = {
     company: [],
     vehicleType: [],
     brand: [],
+    brandByVehicleType: {},
     carColor: [],
     province: []
   },
@@ -442,9 +449,28 @@ function normalizeOptions(options) {
     company: ensureOtherOption(options.company),
     vehicleType: ensureOtherOption(options.vehicleType),
     brand: ensureOtherOption(options.brand),
+    brandByVehicleType: normalizeBrandByVehicleType(options.brandByVehicleType),
     carColor: ensureOtherOption(options.carColor),
     province: ensureOtherOption(options.province)
   };
+}
+
+
+function normalizeBrandByVehicleType(map) {
+  const output = {};
+
+  if (!map || typeof map !== "object") {
+    return output;
+  }
+
+  Object.keys(map).forEach(function (vehicleType) {
+    const key = normalizeText(vehicleType);
+    if (!key) return;
+
+    output[key] = ensureOtherOption(map[vehicleType]);
+  });
+
+  return output;
 }
 
 
@@ -456,7 +482,7 @@ function ensureOtherOption(values) {
   });
 
   withoutOther.push(APP_CONFIG.OTHER_VALUE);
-  return withoutOther;
+  return uniqueArray(withoutOther);
 }
 
 
@@ -492,13 +518,14 @@ function renderPersonOptions() {
 }
 
 
-function renderSelectOptions(select, values, selectedValue) {
+function renderSelectOptions(select, values, selectedValue, placeholderText) {
   const current = selectedValue || "";
+
   select.innerHTML = "";
 
   const placeholder = document.createElement("option");
   placeholder.value = "";
-  placeholder.textContent = "กรุณาเลือก";
+  placeholder.textContent = placeholderText || "กรุณาเลือก";
   select.appendChild(placeholder);
 
   values.forEach(function (value) {
@@ -567,6 +594,48 @@ function getPersonSelectFinalValue(selectId, otherId) {
 }
 
 
+function getBrandsByVehicleType(vehicleType) {
+  const type = normalizeText(vehicleType);
+
+  if (!type) {
+    return [APP_CONFIG.OTHER_VALUE];
+  }
+
+  const map = AppState.options.brandByVehicleType || {};
+
+  if (Array.isArray(map[type]) && map[type].length) {
+    return ensureOtherOption(map[type]);
+  }
+
+  const fallbackKey = findMatchingVehicleTypeKey(type, map);
+  if (fallbackKey && Array.isArray(map[fallbackKey]) && map[fallbackKey].length) {
+    return ensureOtherOption(map[fallbackKey]);
+  }
+
+  if (AppState.options.brand && AppState.options.brand.length) {
+    return ensureOtherOption(AppState.options.brand);
+  }
+
+  return [APP_CONFIG.OTHER_VALUE];
+}
+
+
+function findMatchingVehicleTypeKey(vehicleType, map) {
+  const target = normalizeComparableText(vehicleType);
+
+  return Object.keys(map || {}).find(function (key) {
+    return normalizeComparableText(key) === target;
+  }) || "";
+}
+
+
+function normalizeComparableText(value) {
+  return normalizeText(value)
+    .replace(/\s+/g, "")
+    .toUpperCase();
+}
+
+
 /**
  * =========================
  * VEHICLE STATE
@@ -580,13 +649,13 @@ function createEmptyVehicle() {
     vehicleType: "",
     vehicleTypeOther: "",
 
-   brand: "",
-brandOther: "",
+    brand: "",
+    brandOther: "",
 
-vehicleModel: "",
+    vehicleModel: "",
 
-carColor: "",
-carColorOther: "",
+    carColor: "",
+    carColorOther: "",
 
     plateNumber: "",
 
@@ -792,7 +861,7 @@ function renderVehicles() {
     node.querySelector(".vehicleCardTitle").textContent = "รถคันที่ " + (index + 1);
 
     const removeVehicleBtn = node.querySelector(".removeVehicleBtn");
-    removeVehicleBtn.disabled = AppState.vehicles.length <= 1;
+    removeVehicleBtn.disabled = AppState.vehicles.length <= 1 || AppState.isSubmitting;
     removeVehicleBtn.addEventListener("click", function () {
       removeVehicle(vehicle.id);
     });
@@ -802,7 +871,9 @@ function renderVehicles() {
     renderBookImage(node, vehicle);
 
     const addImageBtn = node.querySelector(".addVehicleImageBtn");
-    addImageBtn.disabled = vehicle.vehicleImages.length >= APP_CONFIG.MAX_VEHICLE_IMAGES;
+    addImageBtn.disabled =
+      AppState.isSubmitting || vehicle.vehicleImages.length >= APP_CONFIG.MAX_VEHICLE_IMAGES;
+
     addImageBtn.addEventListener("click", function () {
       addVehicleImage(vehicle.id);
     });
@@ -825,7 +896,16 @@ function bindVehicleFields(node, vehicle) {
     const optionKey = select.dataset.optionKey;
     const currentValue = vehicle[field] || "";
 
-    renderSelectOptions(select, AppState.options[optionKey] || [], currentValue);
+    const options = getVehicleSelectOptions(field, optionKey, vehicle);
+    const placeholder = getVehicleSelectPlaceholder(field);
+
+    renderSelectOptions(select, options, currentValue, placeholder);
+
+    if (field === "brand") {
+      select.disabled = AppState.isSubmitting || !vehicle.vehicleType;
+    } else {
+      select.disabled = AppState.isSubmitting;
+    }
 
     const otherInput = node.querySelector('[data-field="' + field + 'Other"]');
     const isOther = currentValue === APP_CONFIG.OTHER_VALUE;
@@ -834,6 +914,7 @@ function bindVehicleFields(node, vehicle) {
       otherInput.classList.toggle("hidden", !isOther);
       otherInput.required = isOther;
       otherInput.value = vehicle[field + "Other"] || "";
+      otherInput.disabled = AppState.isSubmitting;
     }
 
     select.addEventListener("change", function () {
@@ -843,36 +924,73 @@ function bindVehicleFields(node, vehicle) {
         updateVehicleField(vehicle.id, field + "Other", "");
       }
 
+      if (field === "vehicleType") {
+        updateVehicleField(vehicle.id, "brand", "");
+        updateVehicleField(vehicle.id, "brandOther", "");
+      }
+
       renderVehicles();
     });
   });
 
-regularInputs.forEach(function (input) {
-  const field = input.dataset.field;
-  input.value = vehicle[field] || "";
+  regularInputs.forEach(function (input) {
+    const field = input.dataset.field;
+    input.value = vehicle[field] || "";
+    input.disabled = AppState.isSubmitting;
 
-  input.addEventListener("input", function () {
-    if (field === "plateNumber") {
-      input.value = normalizePlateInput(input.value);
-      validateSingleInput(input, APP_CONFIG.VALIDATION.PLATE);
-    }
+    input.addEventListener("input", function () {
+      if (field === "plateNumber") {
+        input.value = normalizePlateInput(input.value);
+        validateSingleInput(input, APP_CONFIG.VALIDATION.PLATE);
+      }
 
-    if (field === "vehicleModel") {
-      input.value = normalizeVehicleModelInput(input.value);
-    }
+      if (field === "vehicleModel") {
+        input.value = normalizeVehicleModelInput(input.value);
+      }
 
-    updateVehicleField(vehicle.id, field, input.value);
+      updateVehicleField(vehicle.id, field, input.value);
+    });
   });
-});
 
   otherInputs.forEach(function (input) {
     const field = input.dataset.field;
     input.value = vehicle[field] || "";
+    input.disabled = AppState.isSubmitting;
 
     input.addEventListener("input", function () {
       updateVehicleField(vehicle.id, field, input.value);
     });
   });
+}
+
+
+function getVehicleSelectOptions(field, optionKey, vehicle) {
+  if (field === "brand") {
+    return getBrandsByVehicleType(getVehicleFinalValue(vehicle, "vehicleType"));
+  }
+
+  return AppState.options[optionKey] || [];
+}
+
+
+function getVehicleSelectPlaceholder(field) {
+  if (field === "brand") {
+    return "เลือกยี่ห้อรถ";
+  }
+
+  if (field === "vehicleType") {
+    return "เลือกประเภทรถ";
+  }
+
+  if (field === "carColor") {
+    return "เลือกสีรถ";
+  }
+
+  if (field === "province") {
+    return "เลือกจังหวัด";
+  }
+
+  return "กรุณาเลือก";
 }
 
 
@@ -943,6 +1061,9 @@ function createImageItemNode(config) {
     emptyPreview.classList.remove("hidden");
   }
 
+  fileInput.disabled = AppState.isSubmitting;
+  cameraBtn.disabled = AppState.isSubmitting;
+
   fileInput.addEventListener("change", function (event) {
     handleImageFileChange(event, {
       vehicleId: config.vehicleId,
@@ -961,11 +1082,13 @@ function createImageItemNode(config) {
 
   const removeBtn = node.querySelector(".removeImageBtn");
   if (removeBtn) {
+    removeBtn.disabled = AppState.isSubmitting;
     removeBtn.addEventListener("click", config.onRemove);
   }
 
   const clearBtn = node.querySelector(".clearBookImageBtn");
   if (clearBtn) {
+    clearBtn.disabled = AppState.isSubmitting;
     clearBtn.addEventListener("click", config.onClear);
   }
 
@@ -1338,11 +1461,11 @@ function collectVehiclesPayload() {
   return AppState.vehicles.map(function (vehicle) {
     return {
       vehicleType: getVehicleFinalValue(vehicle, "vehicleType"),
-brand: getVehicleFinalValue(vehicle, "brand"),
-vehicleModel: normalizeVehicleModelInput(vehicle.vehicleModel),
-carColor: getVehicleFinalValue(vehicle, "carColor"),
-plateNumber: normalizePlateInput(vehicle.plateNumber),
-province: getVehicleFinalValue(vehicle, "province"),
+      brand: getVehicleFinalValue(vehicle, "brand"),
+      vehicleModel: normalizeVehicleModelInput(vehicle.vehicleModel),
+      carColor: getVehicleFinalValue(vehicle, "carColor"),
+      plateNumber: normalizePlateInput(vehicle.plateNumber),
+      province: getVehicleFinalValue(vehicle, "province"),
 
       vehicleImages: vehicle.vehicleImages
         .filter(function (img) {
@@ -1437,8 +1560,8 @@ function validatePayload(payload) {
     const label = "รถคันที่ " + (index + 1);
 
     if (!vehicle.vehicleType) throw new Error(label + ": กรุณาเลือกประเภทรถ");
-    if (!vehicle.vehicleModel) throw new Error(label + ": กรุณากรอกรุ่นรถ");
     if (!vehicle.brand) throw new Error(label + ": กรุณาเลือกยี่ห้อรถ");
+    if (!vehicle.vehicleModel) throw new Error(label + ": กรุณากรอกรุ่นรถ");
     if (!vehicle.carColor) throw new Error(label + ": กรุณาเลือกสีรถ");
     if (!vehicle.plateNumber) throw new Error(label + ": กรุณากรอกหมายเลขทะเบียน");
     if (!vehicle.province) throw new Error(label + ": กรุณาเลือกหมวดจังหวัด");
@@ -1521,6 +1644,7 @@ async function handleSubmit(event) {
 
     AppState.isSubmitting = true;
     setSubmitState(true);
+    renderVehicles();
     showLoading("กำลังบันทึกข้อมูล สร้างเอกสาร และส่ง Email...");
 
     const result = await apiPost("/api/save", {
@@ -1548,6 +1672,7 @@ async function handleSubmit(event) {
   } finally {
     AppState.isSubmitting = false;
     setSubmitState(false);
+    renderVehicles();
     hideLoading();
   }
 }
@@ -1633,334 +1758,59 @@ function buildConfirmHtml(payload) {
     '<div class="confirmWrapCompact">',
 
       '<style>',
-        '.vehicleConfirmPopupCompact {',
-          'border-radius: 22px !important;',
-          'overflow: hidden !important;',
-        '}',
+        '.vehicleConfirmPopupCompact { border-radius: 22px !important; overflow: hidden !important; }',
+        '.vehicleConfirmHtmlContainer { margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; }',
+        '.vehicleConfirmActions { margin: 10px 0 14px !important; padding: 0 14px !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; }',
+        '.vehicleConfirmBtnCompact, .vehicleCancelBtnCompact { border: 0 !important; border-radius: 14px !important; font-weight: 950 !important; padding: 11px 14px !important; cursor: pointer !important; margin: 0 !important; width: 100% !important; }',
+        '.vehicleConfirmBtnCompact { background: #0f172a !important; color: #ffffff !important; }',
+        '.vehicleCancelBtnCompact { background: #e5e7eb !important; color: #0f172a !important; }',
 
-        '.vehicleConfirmHtmlContainer {',
-          'margin: 0 !important;',
-          'padding: 0 !important;',
-          'overflow-x: hidden !important;',
-        '}',
-
-        '.vehicleConfirmActions {',
-          'margin: 10px 0 14px !important;',
-          'padding: 0 14px !important;',
-          'display: grid !important;',
-          'grid-template-columns: 1fr 1fr !important;',
-          'gap: 10px !important;',
-        '}',
-
-        '.vehicleConfirmBtnCompact, .vehicleCancelBtnCompact {',
-          'border: 0 !important;',
-          'border-radius: 14px !important;',
-          'font-weight: 950 !important;',
-          'padding: 11px 14px !important;',
-          'cursor: pointer !important;',
-          'margin: 0 !important;',
-          'width: 100% !important;',
-        '}',
-
-        '.vehicleConfirmBtnCompact {',
-          'background: #0f172a !important;',
-          'color: #ffffff !important;',
-        '}',
-
-        '.vehicleCancelBtnCompact {',
-          'background: #e5e7eb !important;',
-          'color: #0f172a !important;',
-        '}',
-
-        '.confirmWrapCompact {',
-          'text-align: left;',
-          'background: #ffffff;',
-          'color: #0f172a;',
-        '}',
-
-        '.confirmHeaderCompact {',
-          'display: flex;',
-          'align-items: center;',
-          'justify-content: space-between;',
-          'gap: 10px;',
-          'padding: 12px 14px;',
-          'background: linear-gradient(135deg, #eff6ff, #f8fafc);',
-          'border-bottom: 1px solid #dbeafe;',
-        '}',
-
-        '.confirmHeaderLeft {',
-          'min-width: 0;',
-        '}',
-
-        '.confirmHeaderCompact h3 {',
-          'margin: 0;',
-          'font-size: 1.06rem;',
-          'font-weight: 950;',
-          'line-height: 1.25;',
-          'color: #0f172a;',
-        '}',
-
-        '.confirmHeaderCompact p {',
-          'margin: 2px 0 0;',
-          'font-size: 0.8rem;',
-          'font-weight: 800;',
-          'color: #475569;',
-          'line-height: 1.25;',
-        '}',
-
-        '.confirmCountBadge {',
-          'flex: 0 0 auto;',
-          'border-radius: 999px;',
-          'padding: 5px 10px;',
-          'background: #0f172a;',
-          'color: #ffffff;',
-          'font-size: 0.78rem;',
-          'font-weight: 950;',
-          'white-space: nowrap;',
-        '}',
-
-        '.confirmBodyCompact {',
-          'padding: 12px 14px 0;',
-        '}',
-
-        '.confirmSectionBoxCompact {',
-          'border: 1px solid #dbe3ef;',
-          'border-radius: 16px;',
-          'overflow: hidden;',
-          'background: #ffffff;',
-        '}',
-
-        '.confirmSectionTitleCompact {',
-          'padding: 8px 10px;',
-          'background: #f8fafc;',
-          'border-bottom: 1px solid #e2e8f0;',
-          'font-size: 0.92rem;',
-          'font-weight: 950;',
-          'color: #0f172a;',
-        '}',
-
-        '.confirmGridCompact {',
-          'display: grid;',
-          'grid-template-columns: repeat(2, minmax(0, 1fr));',
-          'gap: 7px;',
-          'padding: 10px;',
-        '}',
-
-        '.confirmItemCompact {',
-          'border: 1px solid #e2e8f0;',
-          'border-radius: 12px;',
-          'background: #ffffff;',
-          'padding: 7px 8px;',
-          'min-width: 0;',
-        '}',
-
-        '.confirmItemLabel {',
-          'font-size: 0.68rem;',
-          'font-weight: 900;',
-          'color: #64748b;',
-          'line-height: 1.15;',
-          'margin-bottom: 2px;',
-        '}',
-
-        '.confirmItemValue {',
-          'font-size: 0.86rem;',
-          'font-weight: 850;',
-          'line-height: 1.22;',
-          'color: #0f172a;',
-          'word-break: break-word;',
-        '}',
-
-        '.confirmVehicleListCompact {',
-          'margin-top: 10px;',
-        '}',
-
-        '.confirmVehicleSectionTitle {',
-          'font-size: 0.96rem;',
-          'font-weight: 950;',
-          'margin: 0 0 7px;',
-          'color: #0f172a;',
-        '}',
-
-        '.confirmVehicleCardCompact {',
-          'border: 1px solid #dbe3ef;',
-          'border-radius: 16px;',
-          'background: #ffffff;',
-          'overflow: hidden;',
-          'margin-top: 8px;',
-          'box-shadow: 0 5px 14px rgba(15, 23, 42, 0.05);',
-        '}',
-
-        '.confirmVehicleHeadCompact {',
-          'display: flex;',
-          'align-items: center;',
-          'justify-content: space-between;',
-          'gap: 8px;',
-          'padding: 8px 10px;',
-          'background: #0f172a;',
-          'color: #ffffff;',
-        '}',
-
-        '.confirmVehicleTitleCompact {',
-          'font-size: 0.9rem;',
-          'font-weight: 950;',
-          'white-space: nowrap;',
-        '}',
-
-        '.confirmVehiclePlateMini {',
-          'font-size: 0.78rem;',
-          'font-weight: 900;',
-          'background: #ffffff;',
-          'color: #0f172a;',
-          'border-radius: 999px;',
-          'padding: 3px 8px;',
-          'white-space: nowrap;',
-          'max-width: 60%;',
-          'overflow: hidden;',
-          'text-overflow: ellipsis;',
-        '}',
-
-        '.confirmPlateCompact {',
-          'width: min(260px, calc(100% - 20px));',
-          'margin: 10px auto 0;',
-          'border: 3px solid #0f172a;',
-          'border-radius: 14px;',
-          'text-align: center;',
-          'background: #ffffff;',
-          'overflow: hidden;',
-        '}',
-
-        '.confirmPlateNoCompact {',
-          'font-size: 1.7rem;',
-          'font-weight: 950;',
-          'letter-spacing: 1px;',
-          'line-height: 1.1;',
-          'padding: 8px 8px 5px;',
-        '}',
-
-        '.confirmPlateProvinceCompact {',
-          'border-top: 2px solid #0f172a;',
-          'padding: 5px 8px;',
-          'font-size: 0.9rem;',
-          'font-weight: 950;',
-          'line-height: 1.1;',
-        '}',
+        '.confirmWrapCompact { text-align: left; background: #ffffff; color: #0f172a; }',
+        '.confirmHeaderCompact { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: linear-gradient(135deg, #eff6ff, #f8fafc); border-bottom: 1px solid #dbeafe; }',
+        '.confirmHeaderLeft { min-width: 0; }',
+        '.confirmHeaderCompact h3 { margin: 0; font-size: 1.06rem; font-weight: 950; line-height: 1.25; color: #0f172a; }',
+        '.confirmHeaderCompact p { margin: 2px 0 0; font-size: 0.8rem; font-weight: 800; color: #475569; line-height: 1.25; }',
+        '.confirmCountBadge { flex: 0 0 auto; border-radius: 999px; padding: 5px 10px; background: #0f172a; color: #ffffff; font-size: 0.78rem; font-weight: 950; white-space: nowrap; }',
+        '.confirmBodyCompact { padding: 12px 14px 0; }',
+        '.confirmSectionBoxCompact { border: 1px solid #dbe3ef; border-radius: 16px; overflow: hidden; background: #ffffff; }',
+        '.confirmSectionTitleCompact { padding: 8px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.92rem; font-weight: 950; color: #0f172a; }',
+        '.confirmGridCompact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 10px; }',
+        '.confirmItemCompact { border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; padding: 7px 8px; min-width: 0; }',
+        '.confirmItemLabel { font-size: 0.68rem; font-weight: 900; color: #64748b; line-height: 1.15; margin-bottom: 2px; }',
+        '.confirmItemValue { font-size: 0.86rem; font-weight: 850; line-height: 1.22; color: #0f172a; word-break: break-word; }',
+        '.confirmVehicleListCompact { margin-top: 10px; }',
+        '.confirmVehicleSectionTitle { font-size: 0.96rem; font-weight: 950; margin: 0 0 7px; color: #0f172a; }',
+        '.confirmVehicleCardCompact { border: 1px solid #dbe3ef; border-radius: 16px; background: #ffffff; overflow: hidden; margin-top: 8px; box-shadow: 0 5px 14px rgba(15, 23, 42, 0.05); }',
+        '.confirmVehicleHeadCompact { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; background: #0f172a; color: #ffffff; }',
+        '.confirmVehicleTitleCompact { font-size: 0.9rem; font-weight: 950; white-space: nowrap; }',
+        '.confirmVehiclePlateMini { font-size: 0.78rem; font-weight: 900; background: #ffffff; color: #0f172a; border-radius: 999px; padding: 3px 8px; white-space: nowrap; max-width: 60%; overflow: hidden; text-overflow: ellipsis; }',
+        '.confirmPlateCompact { width: min(260px, calc(100% - 20px)); margin: 10px auto 0; border: 3px solid #0f172a; border-radius: 14px; text-align: center; background: #ffffff; overflow: hidden; }',
+        '.confirmPlateNoCompact { font-size: 1.7rem; font-weight: 950; letter-spacing: 1px; line-height: 1.1; padding: 8px 8px 5px; }',
+        '.confirmPlateProvinceCompact { border-top: 2px solid #0f172a; padding: 5px 8px; font-size: 0.9rem; font-weight: 950; line-height: 1.1; }',
 
         '@media (max-width: 640px) {',
-          '.vehicleConfirmPopupCompact {',
-            'width: calc(100% - 12px) !important;',
-            'max-width: calc(100% - 12px) !important;',
-            'border-radius: 18px !important;',
-          '}',
-
-          '.confirmHeaderCompact {',
-            'padding: 9px 10px;',
-          '}',
-
-          '.confirmHeaderCompact h3 {',
-            'font-size: 0.94rem;',
-          '}',
-
-          '.confirmHeaderCompact p {',
-            'font-size: 0.7rem;',
-          '}',
-
-          '.confirmCountBadge {',
-            'font-size: 0.68rem;',
-            'padding: 4px 8px;',
-          '}',
-
-          '.confirmBodyCompact {',
-            'padding: 8px 8px 0;',
-          '}',
-
-          '.confirmSectionTitleCompact {',
-            'padding: 7px 8px;',
-            'font-size: 0.82rem;',
-          '}',
-
-          '.confirmGridCompact {',
-            'grid-template-columns: repeat(2, minmax(0, 1fr));',
-            'gap: 5px;',
-            'padding: 7px;',
-          '}',
-
-          '.confirmItemCompact {',
-            'padding: 5px 6px;',
-            'border-radius: 10px;',
-          '}',
-
-          '.confirmItemLabel {',
-            'font-size: 0.58rem;',
-            'margin-bottom: 1px;',
-          '}',
-
-          '.confirmItemValue {',
-            'font-size: 0.74rem;',
-            'line-height: 1.16;',
-          '}',
-
-          '.confirmVehicleListCompact {',
-            'margin-top: 8px;',
-          '}',
-
-          '.confirmVehicleSectionTitle {',
-            'font-size: 0.84rem;',
-            'margin-bottom: 5px;',
-          '}',
-
-          '.confirmVehicleCardCompact {',
-            'border-radius: 13px;',
-            'margin-top: 6px;',
-          '}',
-
-          '.confirmVehicleHeadCompact {',
-            'padding: 6px 8px;',
-          '}',
-
-          '.confirmVehicleTitleCompact {',
-            'font-size: 0.78rem;',
-          '}',
-
-          '.confirmVehiclePlateMini {',
-            'font-size: 0.66rem;',
-            'padding: 3px 7px;',
-          '}',
-
-          '.confirmPlateCompact {',
-            'width: min(210px, calc(100% - 18px));',
-            'margin-top: 7px;',
-            'border-radius: 12px;',
-          '}',
-
-          '.confirmPlateNoCompact {',
-            'font-size: 1.28rem;',
-            'padding: 6px 6px 4px;',
-          '}',
-
-          '.confirmPlateProvinceCompact {',
-            'font-size: 0.74rem;',
-            'padding: 4px 6px;',
-          '}',
-
-          '.vehicleConfirmActions {',
-            'grid-template-columns: 1fr 1fr !important;',
-            'gap: 7px !important;',
-            'margin: 8px 0 10px !important;',
-            'padding: 0 8px !important;',
-          '}',
-
-          '.vehicleConfirmBtnCompact, .vehicleCancelBtnCompact {',
-            'padding: 9px 8px !important;',
-            'border-radius: 12px !important;',
-            'font-size: 0.82rem !important;',
-          '}',
-        '}',
-
-        '@media (max-width: 380px) {',
-          '.confirmItemLabel { font-size: 0.54rem !important; }',
-          '.confirmItemValue { font-size: 0.68rem !important; }',
-          '.confirmHeaderCompact h3 { font-size: 0.88rem !important; }',
-          '.confirmCountBadge { font-size: 0.62rem !important; }',
+          '.vehicleConfirmPopupCompact { width: calc(100% - 12px) !important; max-width: calc(100% - 12px) !important; border-radius: 18px !important; }',
+          '.confirmHeaderCompact { padding: 9px 10px; }',
+          '.confirmHeaderCompact h3 { font-size: 0.94rem; }',
+          '.confirmHeaderCompact p { font-size: 0.7rem; }',
+          '.confirmCountBadge { font-size: 0.68rem; padding: 4px 8px; }',
+          '.confirmBodyCompact { padding: 8px 8px 0; }',
+          '.confirmSectionTitleCompact { padding: 7px 8px; font-size: 0.82rem; }',
+          '.confirmGridCompact { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; padding: 7px; }',
+          '.confirmItemCompact { padding: 5px 6px; border-radius: 10px; }',
+          '.confirmItemLabel { font-size: 0.58rem; margin-bottom: 1px; }',
+          '.confirmItemValue { font-size: 0.74rem; line-height: 1.16; }',
+          '.confirmVehicleListCompact { margin-top: 8px; }',
+          '.confirmVehicleSectionTitle { font-size: 0.84rem; margin-bottom: 5px; }',
+          '.confirmVehicleCardCompact { border-radius: 13px; margin-top: 6px; }',
+          '.confirmVehicleHeadCompact { padding: 6px 8px; }',
+          '.confirmVehicleTitleCompact { font-size: 0.78rem; }',
+          '.confirmVehiclePlateMini { font-size: 0.66rem; padding: 3px 7px; }',
+          '.confirmPlateCompact { width: min(210px, calc(100% - 18px)); margin-top: 7px; border-radius: 12px; }',
+          '.confirmPlateNoCompact { font-size: 1.28rem; padding: 6px 6px 4px; }',
+          '.confirmPlateProvinceCompact { font-size: 0.74rem; padding: 4px 6px; }',
+          '.vehicleConfirmActions { grid-template-columns: 1fr 1fr !important; gap: 7px !important; margin: 8px 0 10px !important; padding: 0 8px !important; }',
+          '.vehicleConfirmBtnCompact, .vehicleCancelBtnCompact { padding: 9px 8px !important; border-radius: 12px !important; font-size: 0.82rem !important; }',
         '}',
       '</style>',
 
@@ -2008,93 +1858,11 @@ function confirmItemHtml(label, value) {
 }
 
 
-/*
- * เก็บฟังก์ชันนี้ไว้เพื่อไม่ให้ส่วนอื่นที่ยังเรียก detailRowHtml พัง
- * แต่เปลี่ยนให้ใช้รูปแบบ compact เดียวกัน
- */
 function detailRowHtml(label, value) {
   return confirmItemHtml(label, value);
 }
 
 
-
-// async function showSaveSuccess(result) {
-//   await Swal.fire({
-//     icon: "success",
-//     title: "บันทึกข้อมูลเสร็จสิ้น",
-//     html: buildSaveSuccessHtml(result),
-//     width: 780,
-//     confirmButtonText: "ตกลง"
-//   });
-// }
-
-
-// function buildSaveSuccessHtml(result) {
-//   result = result || {};
-
-//   const vehicles = Array.isArray(result.vehicles) ? result.vehicles : [];
-
-//   const dc = pickFirstValue(result.dc, result.person && result.person.dc);
-//   const fullName = pickFirstValue(result.fullName, result.person && result.person.fullName);
-//   const employeeId = pickFirstValue(result.employeeId, result.person && result.person.employeeId);
-//   const department = pickFirstValue(result.department, result.person && result.person.department);
-//   const company = pickFirstValue(result.company, result.person && result.person.company);
-
-//   const vehicleHtml = vehicles.map(function (vehicle) {
-//     const stickerLabel = pickFirstValue(vehicle.stickerLabel, vehicle.stickerNo);
-
-//     const plateText = [
-//       pickFirstValue(vehicle.plateNumber),
-//       pickFirstValue(vehicle.province)
-//     ].filter(Boolean).join(" ");
-
-//     return [
-//       '<div class="saveVehicleResultCard">',
-//         '<div class="saveVehicleResultHeader">',
-//           '<span>Sticker No: ', escapeHtml(stickerLabel || "-"), '</span>',
-//         '</div>',
-
-//         '<div class="saveVehicleResultBody">',
-//           '<p><b>รถคันที่:</b> ', escapeHtml(vehicle.vehicleNo || "-"), '</p>',
-//           '<p><b>ทะเบียน:</b> ', escapeHtml(plateText || "-"), '</p>',
-//           '<p><b>ประเภทรถ:</b> ', escapeHtml(vehicle.vehicleType || "-"), '</p>',
-//           '<p><b>ยี่ห้อ:</b> ', escapeHtml(vehicle.brand || "-"), '</p>',
-//       '<p><b>รุ่นรถ:</b> ', escapeHtml(vehicle.vehicleModel || "-"), '</p>',
-//           '<p><b>สี:</b> ', escapeHtml(vehicle.carColor || "-"), '</p>',
-//         '</div>',
-//       '</div>'
-//     ].join("");
-//   }).join("");
-
-//   return [
-//     '<div class="saveResultWrap">',
-
-//       '<div class="saveResultSummary">',
-//         '<h4>บันทึกข้อมูลสำเร็จ</h4>',
-
-//         '<div class="vehicleDetailGrid">',
-//           detailRowHtml("Registration ID", result.registrationId || "-"),
-//           detailRowHtml("วันที่/เวลา", result.timestamp || "-"),
-//           detailRowHtml("DC", dc || "-"),
-//           detailRowHtml("ชื่อ-นามสกุล", fullName || "-"),
-//           detailRowHtml("รหัสพนักงาน", employeeId || "-"),
-//           detailRowHtml("แผนก", department || "-"),
-//           detailRowHtml("บริษัท", company || "-"),
-//           detailRowHtml("จำนวนรถที่บันทึก", (result.vehicleCount || vehicles.length || "-") + " คัน"),
-//         '</div>',
-//       '</div>',
-
-//       '<div class="saveVehicleResultList" style="margin-top:14px;">',
-//         vehicleHtml || '<p>ไม่พบรายการรถที่ระบบส่งกลับ</p>',
-//       '</div>',
-
-//       '<p style="margin-top:12px;color:#475569;font-weight:700;line-height:1.55;">',
-//         'ระบบบันทึกข้อมูลรถเรียบร้อยแล้ว',
-//       '</p>',
-
-//     '</div>'
-//   ].join("");
-// }
 async function showSaveSuccess(result) {
   await Swal.fire({
     html: buildSaveSuccessHtml(result),
@@ -2156,273 +1924,50 @@ function buildSaveSuccessHtml(result) {
     '<div class="saveSuccessWrap">',
 
       '<style>',
-        '.saveSuccessSwalPopupCompact {',
-          'border-radius: 22px !important;',
-          'overflow: hidden !important;',
-        '}',
+        '.saveSuccessSwalPopupCompact { border-radius: 22px !important; overflow: hidden !important; }',
+        '.saveSuccessSwalPopupCompact .swal2-html-container { margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; }',
+        '.saveSuccessSwalPopupCompact .swal2-actions { margin: 12px 0 16px !important; padding: 0 16px !important; }',
+        '.saveSuccessConfirmBtn { border: 0 !important; border-radius: 14px !important; background: #0f172a !important; color: #ffffff !important; font-weight: 950 !important; padding: 11px 28px !important; cursor: pointer !important; min-width: 130px !important; }',
 
-        '.saveSuccessSwalPopupCompact .swal2-html-container {',
-          'margin: 0 !important;',
-          'padding: 0 !important;',
-          'overflow-x: hidden !important;',
-        '}',
-
-        '.saveSuccessSwalPopupCompact .swal2-actions {',
-          'margin: 12px 0 16px !important;',
-          'padding: 0 16px !important;',
-        '}',
-
-        '.saveSuccessConfirmBtn {',
-          'border: 0 !important;',
-          'border-radius: 14px !important;',
-          'background: #0f172a !important;',
-          'color: #ffffff !important;',
-          'font-weight: 950 !important;',
-          'padding: 11px 28px !important;',
-          'cursor: pointer !important;',
-          'min-width: 130px !important;',
-        '}',
-
-        '.saveSuccessWrap {',
-          'text-align: left;',
-          'color: #0f172a;',
-          'background: #ffffff;',
-        '}',
-
-        '.saveCompactHeader {',
-          'display: flex;',
-          'align-items: center;',
-          'gap: 10px;',
-          'padding: 14px 16px;',
-          'background: linear-gradient(135deg, #ecfdf5, #f8fafc);',
-          'border-bottom: 1px solid #dbeafe;',
-        '}',
-
-        '.saveCompactIcon {',
-          'width: 34px;',
-          'height: 34px;',
-          'border-radius: 999px;',
-          'display: inline-flex;',
-          'align-items: center;',
-          'justify-content: center;',
-          'background: #dcfce7;',
-          'border: 1px solid #86efac;',
-          'color: #166534;',
-          'font-size: 22px;',
-          'font-weight: 950;',
-          'flex: 0 0 auto;',
-        '}',
-
-        '.saveCompactTitle {',
-          'min-width: 0;',
-          'flex: 1 1 auto;',
-        '}',
-
-        '.saveCompactTitle h3 {',
-          'margin: 0;',
-          'font-size: 1.12rem;',
-          'font-weight: 950;',
-          'line-height: 1.25;',
-          'color: #0f172a;',
-        '}',
-
-        '.saveCompactTitle p {',
-          'margin: 2px 0 0;',
-          'font-size: 0.86rem;',
-          'font-weight: 800;',
-          'line-height: 1.25;',
-          'color: #166534;',
-        '}',
-
-        '.saveSuccessBody {',
-          'padding: 14px 16px 0;',
-        '}',
-
-        '.saveSectionBox {',
-          'border: 1px solid #dbe3ef;',
-          'border-radius: 16px;',
-          'background: #ffffff;',
-          'overflow: hidden;',
-        '}',
-
-        '.saveSectionHeader {',
-          'padding: 9px 12px;',
-          'background: #f8fafc;',
-          'border-bottom: 1px solid #e2e8f0;',
-          'font-weight: 950;',
-          'color: #0f172a;',
-          'font-size: 0.96rem;',
-        '}',
-
-        '.saveSuccessGrid {',
-          'display: grid;',
-          'grid-template-columns: repeat(2, minmax(0, 1fr));',
-          'gap: 8px;',
-          'padding: 12px;',
-        '}',
-
-        '.saveResultItem {',
-          'border: 1px solid #e2e8f0;',
-          'background: #ffffff;',
-          'border-radius: 14px;',
-          'padding: 8px 10px;',
-          'min-width: 0;',
-        '}',
-
-        '.saveResultLabel {',
-          'font-size: 0.72rem;',
-          'font-weight: 900;',
-          'color: #64748b;',
-          'line-height: 1.2;',
-          'margin-bottom: 3px;',
-        '}',
-
-        '.saveResultValue {',
-          'font-size: 0.92rem;',
-          'font-weight: 850;',
-          'color: #0f172a;',
-          'line-height: 1.25;',
-          'word-break: break-word;',
-        '}',
-
-        '.saveVehicleSectionTitle {',
-          'margin: 12px 0 8px;',
-          'font-weight: 950;',
-          'color: #0f172a;',
-          'font-size: 1rem;',
-        '}',
-
-        '.saveVehicleBox {',
-          'border: 1px solid #dbe3ef;',
-          'border-radius: 16px;',
-          'overflow: hidden;',
-          'background: #ffffff;',
-          'margin-top: 10px;',
-          'box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);',
-        '}',
-
-        '.saveVehicleHeader {',
-          'display: flex;',
-          'align-items: center;',
-          'justify-content: space-between;',
-          'gap: 10px;',
-          'padding: 9px 12px;',
-          'background: #0f172a;',
-          'color: #ffffff;',
-        '}',
-
-        '.saveVehicleTitle {',
-          'font-weight: 950;',
-          'font-size: 0.94rem;',
-        '}',
-
-        '.saveStickerBadge {',
-          'font-weight: 950;',
-          'background: #ffffff;',
-          'color: #0f172a;',
-          'border-radius: 999px;',
-          'padding: 4px 9px;',
-          'font-size: 0.82rem;',
-          'white-space: nowrap;',
-        '}',
-
-        '.saveVehicleGrid {',
-          'padding: 10px;',
-        '}',
+        '.saveSuccessWrap { text-align: left; color: #0f172a; background: #ffffff; }',
+        '.saveCompactHeader { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, #ecfdf5, #f8fafc); border-bottom: 1px solid #dbeafe; }',
+        '.saveCompactIcon { width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #dcfce7; border: 1px solid #86efac; color: #166534; font-size: 22px; font-weight: 950; flex: 0 0 auto; }',
+        '.saveCompactTitle { min-width: 0; flex: 1 1 auto; }',
+        '.saveCompactTitle h3 { margin: 0; font-size: 1.12rem; font-weight: 950; line-height: 1.25; color: #0f172a; }',
+        '.saveCompactTitle p { margin: 2px 0 0; font-size: 0.86rem; font-weight: 800; line-height: 1.25; color: #166534; }',
+        '.saveSuccessBody { padding: 14px 16px 0; }',
+        '.saveSectionBox { border: 1px solid #dbe3ef; border-radius: 16px; background: #ffffff; overflow: hidden; }',
+        '.saveSectionHeader { padding: 9px 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 950; color: #0f172a; font-size: 0.96rem; }',
+        '.saveSuccessGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }',
+        '.saveResultItem { border: 1px solid #e2e8f0; background: #ffffff; border-radius: 14px; padding: 8px 10px; min-width: 0; }',
+        '.saveResultLabel { font-size: 0.72rem; font-weight: 900; color: #64748b; line-height: 1.2; margin-bottom: 3px; }',
+        '.saveResultValue { font-size: 0.92rem; font-weight: 850; color: #0f172a; line-height: 1.25; word-break: break-word; }',
+        '.saveVehicleSectionTitle { margin: 12px 0 8px; font-weight: 950; color: #0f172a; font-size: 1rem; }',
+        '.saveVehicleBox { border: 1px solid #dbe3ef; border-radius: 16px; overflow: hidden; background: #ffffff; margin-top: 10px; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05); }',
+        '.saveVehicleHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; background: #0f172a; color: #ffffff; }',
+        '.saveVehicleTitle { font-weight: 950; font-size: 0.94rem; }',
+        '.saveStickerBadge { font-weight: 950; background: #ffffff; color: #0f172a; border-radius: 999px; padding: 4px 9px; font-size: 0.82rem; white-space: nowrap; }',
+        '.saveVehicleGrid { padding: 10px; }',
 
         '@media (max-width: 640px) {',
-          '.saveSuccessSwalPopupCompact {',
-            'width: calc(100% - 14px) !important;',
-            'max-width: calc(100% - 14px) !important;',
-            'border-radius: 18px !important;',
-          '}',
-
-          '.saveCompactHeader {',
-            'padding: 10px 11px;',
-            'gap: 8px;',
-          '}',
-
-          '.saveCompactIcon {',
-            'width: 28px;',
-            'height: 28px;',
-            'font-size: 18px;',
-          '}',
-
-          '.saveCompactTitle h3 {',
-            'font-size: 0.98rem;',
-          '}',
-
-          '.saveCompactTitle p {',
-            'font-size: 0.76rem;',
-          '}',
-
-          '.saveSuccessBody {',
-            'padding: 10px 10px 0;',
-          '}',
-
-          '.saveSectionHeader {',
-            'padding: 8px 10px;',
-            'font-size: 0.88rem;',
-          '}',
-
-          '.saveSuccessGrid {',
-            'grid-template-columns: repeat(2, minmax(0, 1fr));',
-            'gap: 6px;',
-            'padding: 8px;',
-          '}',
-
-          '.saveResultItem {',
-            'padding: 6px 7px;',
-            'border-radius: 11px;',
-          '}',
-
-          '.saveResultLabel {',
-            'font-size: 0.62rem;',
-            'margin-bottom: 2px;',
-          '}',
-
-          '.saveResultValue {',
-            'font-size: 0.78rem;',
-            'line-height: 1.2;',
-          '}',
-
-          '.saveVehicleSectionTitle {',
-            'margin: 9px 0 6px;',
-            'font-size: 0.9rem;',
-          '}',
-
-          '.saveVehicleHeader {',
-            'padding: 7px 9px;',
-          '}',
-
-          '.saveVehicleTitle {',
-            'font-size: 0.84rem;',
-          '}',
-
-          '.saveStickerBadge {',
-            'font-size: 0.72rem;',
-            'padding: 3px 7px;',
-          '}',
-
-          '.saveVehicleGrid {',
-            'padding: 7px;',
-          '}',
-
-          '.saveSuccessSwalPopupCompact .swal2-actions {',
-            'margin: 10px 0 12px !important;',
-            'padding: 0 10px !important;',
-          '}',
-
-          '.saveSuccessConfirmBtn {',
-            'width: 100% !important;',
-            'padding: 10px 18px !important;',
-          '}',
-        '}',
-
-        '@media (max-width: 360px) {',
-          '.saveResultLabel { font-size: 0.58rem !important; }',
-          '.saveResultValue { font-size: 0.72rem !important; }',
-          '.saveCompactTitle h3 { font-size: 0.92rem !important; }',
+          '.saveSuccessSwalPopupCompact { width: calc(100% - 14px) !important; max-width: calc(100% - 14px) !important; border-radius: 18px !important; }',
+          '.saveCompactHeader { padding: 10px 11px; gap: 8px; }',
+          '.saveCompactIcon { width: 28px; height: 28px; font-size: 18px; }',
+          '.saveCompactTitle h3 { font-size: 0.98rem; }',
+          '.saveCompactTitle p { font-size: 0.76rem; }',
+          '.saveSuccessBody { padding: 10px 10px 0; }',
+          '.saveSectionHeader { padding: 8px 10px; font-size: 0.88rem; }',
+          '.saveSuccessGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 8px; }',
+          '.saveResultItem { padding: 6px 7px; border-radius: 11px; }',
+          '.saveResultLabel { font-size: 0.62rem; margin-bottom: 2px; }',
+          '.saveResultValue { font-size: 0.78rem; line-height: 1.2; }',
+          '.saveVehicleSectionTitle { margin: 9px 0 6px; font-size: 0.9rem; }',
+          '.saveVehicleHeader { padding: 7px 9px; }',
+          '.saveVehicleTitle { font-size: 0.84rem; }',
+          '.saveStickerBadge { font-size: 0.72rem; padding: 3px 7px; }',
+          '.saveVehicleGrid { padding: 7px; }',
+          '.saveSuccessSwalPopupCompact .swal2-actions { margin: 10px 0 12px !important; padding: 0 10px !important; }',
+          '.saveSuccessConfirmBtn { width: 100% !important; padding: 10px 18px !important; }',
         '}',
       '</style>',
 
@@ -2473,7 +2018,6 @@ function saveResultItemHtml(label, value) {
     '</div>'
   ].join("");
 }
-
 
 
 /**
@@ -2564,9 +2108,7 @@ function normalizeText(value) {
     .replace(/\s+/g, " ")
     .trim();
 }
-function normalizeVehicleModelInput(value) {
-  return normalizeText(value).toUpperCase();
-}
+
 
 function normalizePlateInput(value) {
   return normalizeText(value)
@@ -2580,6 +2122,31 @@ function normalizeEmployeeInput(value) {
     .replace(/\s+/g, "")
     .replace(/[^A-Za-z0-9]/g, "")
     .toUpperCase();
+}
+
+
+function normalizeVehicleModelInput(value) {
+  return normalizeText(value).toUpperCase();
+}
+
+
+function uniqueArray(arr) {
+  const seen = {};
+  const result = [];
+
+  (Array.isArray(arr) ? arr : []).forEach(function (item) {
+    const value = normalizeText(item);
+    if (!value) return;
+
+    const key = value.toUpperCase();
+
+    if (seen[key]) return;
+
+    seen[key] = true;
+    result.push(value);
+  });
+
+  return result;
 }
 
 
@@ -2633,6 +2200,7 @@ function pickFirstValue() {
     const value = normalizeText(arguments[i]);
     if (value) return value;
   }
+
   return "";
 }
 
@@ -2646,79 +2214,36 @@ function buildStatusBadgeHtml(status) {
   let border = "#cbd5e1";
 
   if (upper === "SUCCESS" || upper === "SENT") {
-    bg = "#dcfce7";
+    bg = "#ecfdf5";
     color = "#166534";
-    border = "#86efac";
-  } else if (upper === "NO_RECIPIENT" || upper === "SKIPPED_PDF_FAILED") {
-    bg = "#fef3c7";
-    color = "#92400e";
-    border = "#fcd34d";
-  } else if (upper === "FAILED") {
-    bg = "#fee2e2";
+    border = "#bbf7d0";
+  } else if (upper === "FAILED" || upper === "ERROR") {
+    bg = "#fef2f2";
     color = "#991b1b";
-    border = "#fca5a5";
-  } else if (upper === "PENDING") {
-    bg = "#e0f2fe";
-    color = "#075985";
-    border = "#7dd3fc";
+    border = "#fecaca";
+  } else if (upper === "PENDING" || upper === "NO_RECIPIENT") {
+    bg = "#fffbeb";
+    color = "#92400e";
+    border = "#fde68a";
   }
 
   return [
     '<span style="',
       'display:inline-flex;',
       'align-items:center;',
-      'padding:5px 10px;',
-      'border-radius:999px;',
-      'font-weight:900;',
-      'font-size:0.86rem;',
+      'justify-content:center;',
+      'border:1px solid ', border, ';',
       'background:', bg, ';',
       'color:', color, ';',
-      'border:1px solid ', border, ';',
+      'border-radius:999px;',
+      'padding:3px 9px;',
+      'font-size:0.78rem;',
+      'font-weight:900;',
+      'line-height:1.2;',
     '">',
       escapeHtml(value),
     '</span>'
   ].join("");
-}
-
-
-function buildEmailStatusMessage(result) {
-  const status = normalizeText(result.emailStatus).toUpperCase();
-  const error = normalizeText(result.emailError);
-  const count = Number(result.emailRecipientsCount || 0);
-
-  if (status === "SENT") {
-    return "ส่ง Email พร้อมไฟล์ PDF แนบให้ผู้เกี่ยวข้องแล้ว จำนวนผู้รับ " + count + " ราย";
-  }
-
-  if (status === "NO_RECIPIENT") {
-    return "ไม่พบ Email สำหรับ DC นี้ กรุณาตรวจสอบชีท Email";
-  }
-
-  if (status === "FAILED") {
-    return "ส่ง Email ไม่สำเร็จ" + (error ? " : " + error : "");
-  }
-
-  if (status === "SKIPPED_PDF_FAILED") {
-    return "ไม่ได้ส่ง Email เพราะสร้าง PDF ไม่สำเร็จ";
-  }
-
-  return "ยังไม่พบสถานะการส่ง Email";
-}
-
-
-function buildPdfStatusMessage(result) {
-  const status = normalizeText(result.pdfStatus).toUpperCase();
-  const error = normalizeText(result.pdfError);
-
-  if (status === "SUCCESS") {
-    return "สร้างเอกสาร PDF สำเร็จ";
-  }
-
-  if (status === "FAILED") {
-    return "สร้าง PDF ไม่สำเร็จ" + (error ? " : " + error : "");
-  }
-
-  return "ยังไม่พบสถานะ PDF";
 }
 
 
