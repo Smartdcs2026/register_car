@@ -1644,13 +1644,93 @@ function detailRowHtml(label, value) {
 }
 
 
+// async function showSaveSuccess(result) {
+//   await Swal.fire({
+//     icon: "success",
+//     title: "บันทึกข้อมูลเสร็จสิ้น",
+//     html: buildSaveSuccessHtml(result),
+//     width: 780,
+//     confirmButtonText: "ตกลง"
+//   });
+// }
+
+
+// function buildSaveSuccessHtml(result) {
+//   result = result || {};
+
+//   const vehicles = Array.isArray(result.vehicles) ? result.vehicles : [];
+
+//   const dc = pickFirstValue(result.dc, result.person && result.person.dc);
+//   const fullName = pickFirstValue(result.fullName, result.person && result.person.fullName);
+//   const employeeId = pickFirstValue(result.employeeId, result.person && result.person.employeeId);
+//   const department = pickFirstValue(result.department, result.person && result.person.department);
+//   const company = pickFirstValue(result.company, result.person && result.person.company);
+
+//   const vehicleHtml = vehicles.map(function (vehicle) {
+//     const stickerLabel = pickFirstValue(vehicle.stickerLabel, vehicle.stickerNo);
+
+//     const plateText = [
+//       pickFirstValue(vehicle.plateNumber),
+//       pickFirstValue(vehicle.province)
+//     ].filter(Boolean).join(" ");
+
+//     return [
+//       '<div class="saveVehicleResultCard">',
+//         '<div class="saveVehicleResultHeader">',
+//           '<span>Sticker No: ', escapeHtml(stickerLabel || "-"), '</span>',
+//         '</div>',
+
+//         '<div class="saveVehicleResultBody">',
+//           '<p><b>รถคันที่:</b> ', escapeHtml(vehicle.vehicleNo || "-"), '</p>',
+//           '<p><b>ทะเบียน:</b> ', escapeHtml(plateText || "-"), '</p>',
+//           '<p><b>ประเภทรถ:</b> ', escapeHtml(vehicle.vehicleType || "-"), '</p>',
+//           '<p><b>ยี่ห้อ:</b> ', escapeHtml(vehicle.brand || "-"), '</p>',
+//       '<p><b>รุ่นรถ:</b> ', escapeHtml(vehicle.vehicleModel || "-"), '</p>',
+//           '<p><b>สี:</b> ', escapeHtml(vehicle.carColor || "-"), '</p>',
+//         '</div>',
+//       '</div>'
+//     ].join("");
+//   }).join("");
+
+//   return [
+//     '<div class="saveResultWrap">',
+
+//       '<div class="saveResultSummary">',
+//         '<h4>บันทึกข้อมูลสำเร็จ</h4>',
+
+//         '<div class="vehicleDetailGrid">',
+//           detailRowHtml("Registration ID", result.registrationId || "-"),
+//           detailRowHtml("วันที่/เวลา", result.timestamp || "-"),
+//           detailRowHtml("DC", dc || "-"),
+//           detailRowHtml("ชื่อ-นามสกุล", fullName || "-"),
+//           detailRowHtml("รหัสพนักงาน", employeeId || "-"),
+//           detailRowHtml("แผนก", department || "-"),
+//           detailRowHtml("บริษัท", company || "-"),
+//           detailRowHtml("จำนวนรถที่บันทึก", (result.vehicleCount || vehicles.length || "-") + " คัน"),
+//         '</div>',
+//       '</div>',
+
+//       '<div class="saveVehicleResultList" style="margin-top:14px;">',
+//         vehicleHtml || '<p>ไม่พบรายการรถที่ระบบส่งกลับ</p>',
+//       '</div>',
+
+//       '<p style="margin-top:12px;color:#475569;font-weight:700;line-height:1.55;">',
+//         'ระบบบันทึกข้อมูลรถเรียบร้อยแล้ว',
+//       '</p>',
+
+//     '</div>'
+//   ].join("");
+// }
 async function showSaveSuccess(result) {
   await Swal.fire({
     icon: "success",
     title: "บันทึกข้อมูลเสร็จสิ้น",
     html: buildSaveSuccessHtml(result),
-    width: 780,
-    confirmButtonText: "ตกลง"
+    width: 820,
+    confirmButtonText: "ตกลง",
+    customClass: {
+      popup: "saveSuccessSwalPopup"
+    }
   });
 }
 
@@ -1665,8 +1745,9 @@ function buildSaveSuccessHtml(result) {
   const employeeId = pickFirstValue(result.employeeId, result.person && result.person.employeeId);
   const department = pickFirstValue(result.department, result.person && result.person.department);
   const company = pickFirstValue(result.company, result.person && result.person.company);
+  const phone = pickFirstValue(result.phone, result.person && result.person.phone);
 
-  const vehicleHtml = vehicles.map(function (vehicle) {
+  const vehicleHtml = vehicles.map(function (vehicle, index) {
     const stickerLabel = pickFirstValue(vehicle.stickerLabel, vehicle.stickerNo);
 
     const plateText = [
@@ -1675,53 +1756,178 @@ function buildSaveSuccessHtml(result) {
     ].filter(Boolean).join(" ");
 
     return [
-      '<div class="saveVehicleResultCard">',
-        '<div class="saveVehicleResultHeader">',
-          '<span>Sticker No: ', escapeHtml(stickerLabel || "-"), '</span>',
+      '<div style="',
+        'border:1px solid #dbe3ef;',
+        'border-radius:16px;',
+        'overflow:hidden;',
+        'background:#ffffff;',
+        'margin-top:12px;',
+        'box-shadow:0 8px 22px rgba(15,23,42,0.06);',
+      '">',
+
+        '<div style="',
+          'display:flex;',
+          'align-items:center;',
+          'justify-content:space-between;',
+          'gap:10px;',
+          'padding:10px 12px;',
+          'background:#0f172a;',
+          'color:#ffffff;',
+        '">',
+          '<div style="font-weight:900;font-size:0.98rem;">รถคันที่ ', escapeHtml(vehicle.vehicleNo || (index + 1)), '</div>',
+          '<div style="',
+            'font-weight:950;',
+            'background:#ffffff;',
+            'color:#0f172a;',
+            'border-radius:999px;',
+            'padding:5px 10px;',
+            'font-size:0.88rem;',
+            'white-space:nowrap;',
+          '">Sticker: ', escapeHtml(stickerLabel || "-"), '</div>',
         '</div>',
 
-        '<div class="saveVehicleResultBody">',
-          '<p><b>รถคันที่:</b> ', escapeHtml(vehicle.vehicleNo || "-"), '</p>',
-          '<p><b>ทะเบียน:</b> ', escapeHtml(plateText || "-"), '</p>',
-          '<p><b>ประเภทรถ:</b> ', escapeHtml(vehicle.vehicleType || "-"), '</p>',
-          '<p><b>ยี่ห้อ:</b> ', escapeHtml(vehicle.brand || "-"), '</p>',
-      '<p><b>รุ่นรถ:</b> ', escapeHtml(vehicle.vehicleModel || "-"), '</p>',
-          '<p><b>สี:</b> ', escapeHtml(vehicle.carColor || "-"), '</p>',
+        '<div style="',
+          'display:grid;',
+          'grid-template-columns:repeat(2,minmax(0,1fr));',
+          'gap:8px;',
+          'padding:12px;',
+        '">',
+          saveResultItemHtml("ทะเบียน", plateText || "-"),
+          saveResultItemHtml("ประเภทรถ", vehicle.vehicleType || "-"),
+          saveResultItemHtml("ยี่ห้อรถ", vehicle.brand || "-"),
+          saveResultItemHtml("รุ่นรถ", vehicle.vehicleModel || "-"),
+          saveResultItemHtml("สีรถ", vehicle.carColor || "-"),
+          saveResultItemHtml("รหัสรถ", vehicle.vehicleId || "-"),
         '</div>',
+
       '</div>'
     ].join("");
   }).join("");
 
   return [
-    '<div class="saveResultWrap">',
+    '<div style="text-align:left;">',
 
-      '<div class="saveResultSummary">',
-        '<h4>บันทึกข้อมูลสำเร็จ</h4>',
+      '<style>',
+        '@media (max-width: 640px) {',
+          '.swal2-popup.saveSuccessSwalPopup {',
+            'width: calc(100% - 18px) !important;',
+            'padding: 0.9rem !important;',
+          '}',
+          '.saveSuccessGrid {',
+            'grid-template-columns: repeat(2, minmax(0, 1fr)) !important;',
+            'gap: 7px !important;',
+          '}',
+          '.saveResultItem {',
+            'padding: 7px 8px !important;',
+            'border-radius: 12px !important;',
+          '}',
+          '.saveResultLabel {',
+            'font-size: 0.66rem !important;',
+          '}',
+          '.saveResultValue {',
+            'font-size: 0.82rem !important;',
+          '}',
+        '}',
+        '@media (max-width: 360px) {',
+          '.saveResultLabel { font-size: 0.62rem !important; }',
+          '.saveResultValue { font-size: 0.76rem !important; }',
+        '}',
+      '</style>',
 
-        '<div class="vehicleDetailGrid">',
-          detailRowHtml("Registration ID", result.registrationId || "-"),
-          detailRowHtml("วันที่/เวลา", result.timestamp || "-"),
-          detailRowHtml("DC", dc || "-"),
-          detailRowHtml("ชื่อ-นามสกุล", fullName || "-"),
-          detailRowHtml("รหัสพนักงาน", employeeId || "-"),
-          detailRowHtml("แผนก", department || "-"),
-          detailRowHtml("บริษัท", company || "-"),
-          detailRowHtml("จำนวนรถที่บันทึก", (result.vehicleCount || vehicles.length || "-") + " คัน"),
-        '</div>',
-      '</div>',
-
-      '<div class="saveVehicleResultList" style="margin-top:14px;">',
-        vehicleHtml || '<p>ไม่พบรายการรถที่ระบบส่งกลับ</p>',
-      '</div>',
-
-      '<p style="margin-top:12px;color:#475569;font-weight:700;line-height:1.55;">',
+      '<div style="',
+        'border:1px solid #bbf7d0;',
+        'background:#f0fdf4;',
+        'color:#166534;',
+        'border-radius:16px;',
+        'padding:12px;',
+        'margin-bottom:12px;',
+        'font-weight:900;',
+        'line-height:1.45;',
+      '">',
         'ระบบบันทึกข้อมูลรถเรียบร้อยแล้ว',
-      '</p>',
+      '</div>',
+
+      '<div style="',
+        'border:1px solid #dbe3ef;',
+        'border-radius:16px;',
+        'background:#ffffff;',
+        'overflow:hidden;',
+      '">',
+
+        '<div style="',
+          'padding:10px 12px;',
+          'background:#f8fafc;',
+          'border-bottom:1px solid #e2e8f0;',
+          'font-weight:950;',
+          'color:#0f172a;',
+        '">',
+          'ข้อมูลผู้ลงทะเบียน',
+        '</div>',
+
+        '<div class="saveSuccessGrid" style="',
+          'display:grid;',
+          'grid-template-columns:repeat(2,minmax(0,1fr));',
+          'gap:8px;',
+          'padding:12px;',
+        '">',
+          saveResultItemHtml("Registration ID", result.registrationId || "-"),
+          saveResultItemHtml("วันที่/เวลา", result.timestamp || "-"),
+          saveResultItemHtml("DC", dc || "-"),
+          saveResultItemHtml("รหัสพนักงาน", employeeId || "-"),
+          saveResultItemHtml("ชื่อ-นามสกุล", fullName || "-"),
+          saveResultItemHtml("เบอร์โทร", phone || "-"),
+          saveResultItemHtml("แผนก", department || "-"),
+          saveResultItemHtml("บริษัท", company || "-"),
+          saveResultItemHtml("จำนวนรถ", (result.vehicleCount || vehicles.length || "-") + " คัน"),
+        '</div>',
+
+      '</div>',
+
+      '<div style="',
+        'margin-top:14px;',
+        'font-weight:950;',
+        'color:#0f172a;',
+      '">',
+        'รายละเอียดรถ',
+      '</div>',
+
+      vehicleHtml || '<div style="margin-top:10px;color:#64748b;font-weight:800;">ไม่พบรายการรถที่ระบบส่งกลับ</div>',
 
     '</div>'
   ].join("");
 }
 
+
+function saveResultItemHtml(label, value) {
+  return [
+    '<div class="saveResultItem" style="',
+      'border:1px solid #e2e8f0;',
+      'background:#ffffff;',
+      'border-radius:14px;',
+      'padding:9px 10px;',
+      'min-width:0;',
+    '">',
+      '<div class="saveResultLabel" style="',
+        'font-size:0.74rem;',
+        'font-weight:900;',
+        'color:#64748b;',
+        'line-height:1.25;',
+        'margin-bottom:3px;',
+      '">',
+        escapeHtml(label),
+      '</div>',
+      '<div class="saveResultValue" style="',
+        'font-size:0.94rem;',
+        'font-weight:850;',
+        'color:#0f172a;',
+        'line-height:1.3;',
+        'word-break:break-word;',
+      '">',
+        escapeHtml(value || "-"),
+      '</div>',
+    '</div>'
+  ].join("");
+}
 
 /**
  * =========================
