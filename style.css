@@ -1632,3 +1632,141 @@ select:disabled {
     border-color: #dddddd;
   }
 }
+
+
+
+
+
+
+/* ==========================================================
+   MOBILE 2-COLUMN FORM OVERRIDE
+   แสดงฟอร์มมือถือแถวละ 2 ช่อง เพื่อใช้พื้นที่คุ้มขึ้น
+========================================================== */
+
+@media (max-width: 760px) {
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .vehicleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
+  .fieldSpan2 {
+    grid-column: span 2 !important;
+  }
+
+  .fieldGroup {
+    min-width: 0;
+  }
+
+  label {
+    margin-bottom: 5px;
+    font-size: 0.74rem;
+    line-height: 1.15;
+  }
+
+  input,
+  select {
+    min-height: 40px;
+    padding: 8px 9px;
+    border-radius: 12px;
+    font-size: 16px;
+  }
+
+  select {
+    padding-right: 30px;
+    background-position:
+      calc(100% - 16px) 17px,
+      calc(100% - 10px) 17px;
+  }
+
+  .fieldHint {
+    margin-top: 4px;
+    font-size: 0.64rem;
+    line-height: 1.25;
+  }
+
+  .otherInput {
+    margin-top: 6px;
+  }
+
+  .sectionHeader {
+    margin-bottom: 9px;
+  }
+
+  .sectionHeader h2 {
+    font-size: 0.9rem;
+  }
+
+  .sectionHeader p {
+    margin-left: 14px;
+    font-size: 0.74rem;
+    line-height: 1.32;
+  }
+
+  .formSection {
+    padding: 12px 9px;
+  }
+
+  .vehicleCardHeader {
+    padding: 10px;
+  }
+
+  .vehicleCardTitle {
+    font-size: 0.92rem;
+  }
+
+  .vehicleCardSubtitle {
+    font-size: 0.72rem;
+    margin-top: 3px;
+  }
+}
+
+@media (max-width: 420px) {
+  .formGrid,
+  .vehicleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .vehicleGrid {
+    padding: 8px !important;
+  }
+
+  .fieldSpan2 {
+    grid-column: span 2 !important;
+  }
+
+  label {
+    font-size: 0.66rem;
+    margin-bottom: 4px;
+  }
+
+  input,
+  select {
+    min-height: 38px;
+    padding: 7px 8px;
+    border-radius: 11px;
+    font-size: 16px;
+  }
+
+  select {
+    padding-right: 28px;
+    background-position:
+      calc(100% - 15px) 16px,
+      calc(100% - 9px) 16px;
+  }
+
+  .fieldHint {
+    font-size: 0.58rem;
+    line-height: 1.2;
+  }
+
+  .formSection {
+    padding: 10px 7px;
+  }
+}
