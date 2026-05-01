@@ -1045,6 +1045,10 @@ function createImageItemNode(config) {
   const preview = node.querySelector(".imagePreview");
   const emptyPreview = node.querySelector(".emptyPreview");
   const fileInput = node.querySelector(".imageFileInput");
+  if (fileInput) {
+  fileInput.setAttribute("accept", "image/*");
+  fileInput.setAttribute("capture", "environment");
+}
   const cameraBtn = node.querySelector(".cameraOpenBtn");
 
   label.textContent = config.label;
@@ -1479,6 +1483,8 @@ async function closeCamera() {
 
 
 async function switchCamera() {
+  const currentTarget = AppState.camera.target;
+
   AppState.camera.facingMode =
     AppState.camera.facingMode === "environment" ? "user" : "environment";
 
@@ -1499,9 +1505,12 @@ async function switchCamera() {
       reverseButtons: true
     });
 
-    if (result.isConfirmed && AppState.camera.target) {
-      await closeCamera();
-      await fallbackNativeCameraCapture_(AppState.camera.target);
+    if (result.isConfirmed && currentTarget) {
+      DOM.cameraModal.classList.add("hidden");
+      DOM.cameraModal.setAttribute("aria-hidden", "true");
+      AppState.camera.target = currentTarget;
+
+      await fallbackNativeCameraCapture_(currentTarget);
     }
 
   } finally {
