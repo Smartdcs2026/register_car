@@ -580,11 +580,13 @@ function createEmptyVehicle() {
     vehicleType: "",
     vehicleTypeOther: "",
 
-    brand: "",
-    brandOther: "",
+   brand: "",
+brandOther: "",
 
-    carColor: "",
-    carColorOther: "",
+vehicleModel: "",
+
+carColor: "",
+carColorOther: "",
 
     plateNumber: "",
 
@@ -660,6 +662,11 @@ function updateVehicleField(vehicleId, field, value) {
 
   if (field === "plateNumber") {
     vehicle[field] = normalizePlateInput(value);
+    return;
+  }
+
+  if (field === "vehicleModel") {
+    vehicle[field] = normalizeVehicleModelInput(value);
     return;
   }
 
@@ -840,19 +847,23 @@ function bindVehicleFields(node, vehicle) {
     });
   });
 
-  regularInputs.forEach(function (input) {
-    const field = input.dataset.field;
-    input.value = vehicle[field] || "";
+regularInputs.forEach(function (input) {
+  const field = input.dataset.field;
+  input.value = vehicle[field] || "";
 
-    input.addEventListener("input", function () {
-      if (field === "plateNumber") {
-        input.value = normalizePlateInput(input.value);
-        validateSingleInput(input, APP_CONFIG.VALIDATION.PLATE);
-      }
+  input.addEventListener("input", function () {
+    if (field === "plateNumber") {
+      input.value = normalizePlateInput(input.value);
+      validateSingleInput(input, APP_CONFIG.VALIDATION.PLATE);
+    }
 
-      updateVehicleField(vehicle.id, field, input.value);
-    });
+    if (field === "vehicleModel") {
+      input.value = normalizeVehicleModelInput(input.value);
+    }
+
+    updateVehicleField(vehicle.id, field, input.value);
   });
+});
 
   otherInputs.forEach(function (input) {
     const field = input.dataset.field;
@@ -1327,10 +1338,11 @@ function collectVehiclesPayload() {
   return AppState.vehicles.map(function (vehicle) {
     return {
       vehicleType: getVehicleFinalValue(vehicle, "vehicleType"),
-      brand: getVehicleFinalValue(vehicle, "brand"),
-      carColor: getVehicleFinalValue(vehicle, "carColor"),
-      plateNumber: normalizePlateInput(vehicle.plateNumber),
-      province: getVehicleFinalValue(vehicle, "province"),
+brand: getVehicleFinalValue(vehicle, "brand"),
+vehicleModel: normalizeVehicleModelInput(vehicle.vehicleModel),
+carColor: getVehicleFinalValue(vehicle, "carColor"),
+plateNumber: normalizePlateInput(vehicle.plateNumber),
+province: getVehicleFinalValue(vehicle, "province"),
 
       vehicleImages: vehicle.vehicleImages
         .filter(function (img) {
@@ -1425,6 +1437,7 @@ function validatePayload(payload) {
     const label = "รถคันที่ " + (index + 1);
 
     if (!vehicle.vehicleType) throw new Error(label + ": กรุณาเลือกประเภทรถ");
+    if (!vehicle.vehicleModel) throw new Error(label + ": กรุณากรอกรุ่นรถ");
     if (!vehicle.brand) throw new Error(label + ": กรุณาเลือกยี่ห้อรถ");
     if (!vehicle.carColor) throw new Error(label + ": กรุณาเลือกสีรถ");
     if (!vehicle.plateNumber) throw new Error(label + ": กรุณากรอกหมายเลขทะเบียน");
@@ -1588,12 +1601,13 @@ function buildConfirmHtml(payload) {
           '<div class="plateProvincePreview">', escapeHtml(vehicle.province), '</div>',
         '</div>',
         '<div class="vehicleDetailGrid">',
-          detailRowHtml("ประเภทรถ", vehicle.vehicleType),
-          detailRowHtml("ยี่ห้อ", vehicle.brand),
-          detailRowHtml("สี", vehicle.carColor),
-          detailRowHtml("รูปรถ", vehicle.vehicleImages.length + " รูป"),
-          detailRowHtml("ภาพสำเนา/เล่มรถ", vehicle.bookImage ? "แนบแล้ว" : "ยังไม่แนบ"),
-        '</div>',
+  detailRowHtml("ประเภทรถ", vehicle.vehicleType),
+  detailRowHtml("ยี่ห้อ", vehicle.brand),
+  detailRowHtml("รุ่นรถ", vehicle.vehicleModel),
+  detailRowHtml("สี", vehicle.carColor),
+  detailRowHtml("รูปรถ", vehicle.vehicleImages.length + " รูป"),
+  detailRowHtml("ภาพสำเนา/เล่มรถ", vehicle.bookImage ? "แนบแล้ว" : "ยังไม่แนบ"),
+'</div>',
       '</div>'
     ].join("");
   }).join("");
@@ -1671,6 +1685,7 @@ function buildSaveSuccessHtml(result) {
           '<p><b>ทะเบียน:</b> ', escapeHtml(plateText || "-"), '</p>',
           '<p><b>ประเภทรถ:</b> ', escapeHtml(vehicle.vehicleType || "-"), '</p>',
           '<p><b>ยี่ห้อ:</b> ', escapeHtml(vehicle.brand || "-"), '</p>',
+      '<p><b>รุ่นรถ:</b> ', escapeHtml(vehicle.vehicleModel || "-"), '</p>',
           '<p><b>สี:</b> ', escapeHtml(vehicle.carColor || "-"), '</p>',
         '</div>',
       '</div>'
@@ -1796,7 +1811,9 @@ function normalizeText(value) {
     .replace(/\s+/g, " ")
     .trim();
 }
-
+function normalizeVehicleModelInput(value) {
+  return normalizeText(value).toUpperCase();
+}
 
 function normalizePlateInput(value) {
   return normalizeText(value)
