@@ -1770,3 +1770,50 @@ select:disabled {
     padding: 10px 7px;
   }
 }
+/* ==========================================================
+   CAMERA MOBILE / iPHONE SAFE
+========================================================== */
+
+.cameraModal {
+  touch-action: none;
+}
+
+.cameraVideo {
+  width: 100%;
+  height: auto;
+  max-height: 68vh;
+  object-fit: contain;
+}
+
+@media (max-width: 760px) {
+  .cameraModal {
+    align-items: end;
+    padding: 8px;
+  }
+
+  .cameraPanel {
+    width: 100%;
+    max-height: calc(100vh - 16px);
+    border-radius: 22px 22px 0 0;
+  }
+
+  .cameraBody {
+    padding: 8px;
+  }
+
+  .cameraVideo {
+    max-height: 58vh;
+    border-radius: 14px;
+  }
+
+  .cameraActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .cameraActions .btn {
+    width: 100%;
+  }
+}
