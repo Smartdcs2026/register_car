@@ -311,11 +311,11 @@ img {
   width: 72px;
   height: 72px;
   object-fit: contain;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: #ffffff;
-  box-shadow: var(--shadow-sm);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .consentCard h1 {
