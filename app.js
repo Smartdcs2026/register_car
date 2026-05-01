@@ -1244,6 +1244,9 @@ function calculateFitSize(width, height, maxWidth, maxHeight) {
 
 function canvasToBlob(canvas, mimeType, quality) {
   return new Promise(function (resolve, reject) {
+    const finalMimeType = mimeType || "image/jpeg";
+    const finalQuality = typeof quality === "number" ? quality : 0.8;
+
     if (canvas.toBlob) {
       canvas.toBlob(
         function (blob) {
@@ -1254,8 +1257,8 @@ function canvasToBlob(canvas, mimeType, quality) {
 
           resolve(blob);
         },
-        mimeType || "image/jpeg",
-        typeof quality === "number" ? quality : 0.8
+        finalMimeType,
+        finalQuality
       );
 
       return;
@@ -1265,13 +1268,8 @@ function canvasToBlob(canvas, mimeType, quality) {
      * fallback สำหรับ Safari/iOS รุ่นเก่า
      */
     try {
-      const dataUrl = canvas.toDataURL(
-        mimeType || "image/jpeg",
-        typeof quality === "number" ? quality : 0.8
-      );
-
+      const dataUrl = canvas.toDataURL(finalMimeType, finalQuality);
       resolve(dataUrlToBlob(dataUrl));
-
     } catch (err) {
       reject(new Error("Browser นี้ไม่รองรับการสร้างไฟล์จากภาพ"));
     }
@@ -1281,6 +1279,11 @@ function canvasToBlob(canvas, mimeType, quality) {
 
 function blobToDataUrl(blob) {
   return new Promise(function (resolve, reject) {
+    if (!blob) {
+      reject(new Error("ไม่พบไฟล์ภาพสำหรับแปลงข้อมูล"));
+      return;
+    }
+
     const reader = new FileReader();
 
     reader.onload = function () {
@@ -1297,16 +1300,22 @@ function blobToDataUrl(blob) {
 
 
 /*
- * กันปัญหา cache หรือโค้ดบางจุดเรียกชื่อผิดเป็น BlobToDataUrl
- * JavaScript แยกตัวพิมพ์เล็ก/ใหญ่ จึงทำ alias ไว้ให้ปลอดภัย
+ * Alias เผื่อมีโค้ดเก่าหรือ cache เรียกชื่อ BlobToDataUrl แบบตัว B ใหญ่
+ * ห้ามให้ alias เรียกตัวเองเด็ดขาด
  */
-function blobToDataUrl(blob) {
+function BlobToDataUrl(blob) {
   return blobToDataUrl(blob);
 }
 
 
 function dataUrlToBlob(dataUrl) {
-  const parts = String(dataUrl || "").split(",");
+  const text = String(dataUrl || "");
+
+  if (!text || text.indexOf(",") === -1) {
+    throw new Error("รูปแบบ Data URL ไม่ถูกต้อง");
+  }
+
+  const parts = text.split(",");
   const meta = parts[0] || "";
   const base64 = parts[1] || "";
 
