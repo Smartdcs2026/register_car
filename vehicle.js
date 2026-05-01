@@ -61,6 +61,7 @@ VehicleDOM.company = byId("company");
 
   VehicleDOM.vehicleType = byId("vehicleType");
   VehicleDOM.brand = byId("brand");
+  VehicleDOM.vehicleModel = byId("vehicleModel");
   VehicleDOM.carColor = byId("carColor");
   VehicleDOM.status = byId("status");
   VehicleDOM.vehicleId = byId("vehicleId");
@@ -87,6 +88,7 @@ VehicleDOM.company = byId("company");
   "company",
   "vehicleType",
   "brand",
+   "vehicleModel",
   "carColor",
   "status",
   "vehicleId",
@@ -182,6 +184,7 @@ function renderVehicleResult(vehicle) {
 
   setText(VehicleDOM.vehicleType, vehicle.vehicleType);
   setText(VehicleDOM.brand, vehicle.brand);
+  setText(VehicleDOM.vehicleModel, vehicle.vehicleModel);
   setText(VehicleDOM.carColor, vehicle.carColor);
   setText(VehicleDOM.status, vehicle.status);
   setText(VehicleDOM.vehicleId, vehicle.vehicleId);
