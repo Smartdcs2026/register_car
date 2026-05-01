@@ -1571,18 +1571,22 @@ function setSubmitState(isSubmitting) {
 
 async function showConfirmBeforeSave(payload) {
   const result = await Swal.fire({
-    title: "",
     html: buildConfirmHtml(payload),
-    customClass: {
-      popup: "vehicleSwalPopup",
-      confirmButton: "vehicleConfirmBtn",
-      cancelButton: "vehicleCancelBtn"
-    },
+    width: 860,
+    padding: 0,
     showCancelButton: true,
     confirmButtonText: "ยืนยันบันทึก",
     cancelButtonText: "กลับไปแก้ไข",
     reverseButtons: true,
-    focusConfirm: false
+    focusConfirm: false,
+    buttonsStyling: false,
+    customClass: {
+      popup: "vehicleConfirmPopupCompact",
+      htmlContainer: "vehicleConfirmHtmlContainer",
+      actions: "vehicleConfirmActions",
+      confirmButton: "vehicleConfirmBtnCompact",
+      cancelButton: "vehicleCancelBtnCompact"
+    }
   });
 
   return result.isConfirmed === true;
@@ -1590,58 +1594,428 @@ async function showConfirmBeforeSave(payload) {
 
 
 function buildConfirmHtml(payload) {
-  const person = payload.person;
+  const person = payload.person || {};
+  const vehicles = Array.isArray(payload.vehicles) ? payload.vehicles : [];
 
-  const vehicleHtml = payload.vehicles.map(function (vehicle, index) {
+  const vehicleHtml = vehicles.map(function (vehicle, index) {
+    const plateText = [
+      vehicle.plateNumber || "-",
+      vehicle.province || "-"
+    ].filter(Boolean).join(" ");
+
     return [
-      '<div class="confirmVehicleCard">',
-        '<div class="confirmVehicleHeader">รถคันที่ ', index + 1, '</div>',
-        '<div class="platePreview">',
-          '<div class="plateNumberPreview">', escapeHtml(vehicle.plateNumber), '</div>',
-          '<div class="plateProvincePreview">', escapeHtml(vehicle.province), '</div>',
+      '<section class="confirmVehicleCardCompact">',
+
+        '<div class="confirmVehicleHeadCompact">',
+          '<div class="confirmVehicleTitleCompact">รถคันที่ ', escapeHtml(index + 1), '</div>',
+          '<div class="confirmVehiclePlateMini">', escapeHtml(plateText), '</div>',
         '</div>',
-        '<div class="vehicleDetailGrid">',
-  detailRowHtml("ประเภทรถ", vehicle.vehicleType),
-  detailRowHtml("ยี่ห้อ", vehicle.brand),
-  detailRowHtml("รุ่นรถ", vehicle.vehicleModel),
-  detailRowHtml("สี", vehicle.carColor),
-  detailRowHtml("รูปรถ", vehicle.vehicleImages.length + " รูป"),
-  detailRowHtml("ภาพสำเนา/เล่มรถ", vehicle.bookImage ? "แนบแล้ว" : "ยังไม่แนบ"),
-'</div>',
-      '</div>'
+
+        '<div class="confirmPlateCompact">',
+          '<div class="confirmPlateNoCompact">', escapeHtml(vehicle.plateNumber || "-"), '</div>',
+          '<div class="confirmPlateProvinceCompact">', escapeHtml(vehicle.province || "-"), '</div>',
+        '</div>',
+
+        '<div class="confirmGridCompact">',
+          confirmItemHtml("ประเภทรถ", vehicle.vehicleType),
+          confirmItemHtml("ยี่ห้อ", vehicle.brand),
+          confirmItemHtml("รุ่นรถ", vehicle.vehicleModel),
+          confirmItemHtml("สี", vehicle.carColor),
+          confirmItemHtml("รูปรถ", String((vehicle.vehicleImages || []).length) + " รูป"),
+          confirmItemHtml("เล่มรถ", vehicle.bookImage ? "แนบแล้ว" : "ยังไม่แนบ"),
+        '</div>',
+
+      '</section>'
     ].join("");
   }).join("");
 
   return [
-    '<div class="vehicleConfirmWrap">',
-      '<h3 class="vehicleConfirmTitle">ตรวจสอบข้อมูลก่อนบันทึก</h3>',
+    '<div class="confirmWrapCompact">',
 
-      '<div class="confirmPersonBox">',
-        '<h4>ข้อมูลผู้ลงทะเบียน</h4>',
-        '<div class="vehicleDetailGrid">',
-          detailRowHtml("DC", person.dc),
-          detailRowHtml("ชื่อ-นามสกุล", person.fullName),
-          detailRowHtml("รหัสพนักงาน", person.employeeId),
-          detailRowHtml("แผนก", person.department),
-          detailRowHtml("บริษัท", person.company),
-          detailRowHtml("เบอร์โทร", person.phone),
+      '<style>',
+        '.vehicleConfirmPopupCompact {',
+          'border-radius: 22px !important;',
+          'overflow: hidden !important;',
+        '}',
+
+        '.vehicleConfirmHtmlContainer {',
+          'margin: 0 !important;',
+          'padding: 0 !important;',
+          'overflow-x: hidden !important;',
+        '}',
+
+        '.vehicleConfirmActions {',
+          'margin: 10px 0 14px !important;',
+          'padding: 0 14px !important;',
+          'display: grid !important;',
+          'grid-template-columns: 1fr 1fr !important;',
+          'gap: 10px !important;',
+        '}',
+
+        '.vehicleConfirmBtnCompact, .vehicleCancelBtnCompact {',
+          'border: 0 !important;',
+          'border-radius: 14px !important;',
+          'font-weight: 950 !important;',
+          'padding: 11px 14px !important;',
+          'cursor: pointer !important;',
+          'margin: 0 !important;',
+          'width: 100% !important;',
+        '}',
+
+        '.vehicleConfirmBtnCompact {',
+          'background: #0f172a !important;',
+          'color: #ffffff !important;',
+        '}',
+
+        '.vehicleCancelBtnCompact {',
+          'background: #e5e7eb !important;',
+          'color: #0f172a !important;',
+        '}',
+
+        '.confirmWrapCompact {',
+          'text-align: left;',
+          'background: #ffffff;',
+          'color: #0f172a;',
+        '}',
+
+        '.confirmHeaderCompact {',
+          'display: flex;',
+          'align-items: center;',
+          'justify-content: space-between;',
+          'gap: 10px;',
+          'padding: 12px 14px;',
+          'background: linear-gradient(135deg, #eff6ff, #f8fafc);',
+          'border-bottom: 1px solid #dbeafe;',
+        '}',
+
+        '.confirmHeaderLeft {',
+          'min-width: 0;',
+        '}',
+
+        '.confirmHeaderCompact h3 {',
+          'margin: 0;',
+          'font-size: 1.06rem;',
+          'font-weight: 950;',
+          'line-height: 1.25;',
+          'color: #0f172a;',
+        '}',
+
+        '.confirmHeaderCompact p {',
+          'margin: 2px 0 0;',
+          'font-size: 0.8rem;',
+          'font-weight: 800;',
+          'color: #475569;',
+          'line-height: 1.25;',
+        '}',
+
+        '.confirmCountBadge {',
+          'flex: 0 0 auto;',
+          'border-radius: 999px;',
+          'padding: 5px 10px;',
+          'background: #0f172a;',
+          'color: #ffffff;',
+          'font-size: 0.78rem;',
+          'font-weight: 950;',
+          'white-space: nowrap;',
+        '}',
+
+        '.confirmBodyCompact {',
+          'padding: 12px 14px 0;',
+        '}',
+
+        '.confirmSectionBoxCompact {',
+          'border: 1px solid #dbe3ef;',
+          'border-radius: 16px;',
+          'overflow: hidden;',
+          'background: #ffffff;',
+        '}',
+
+        '.confirmSectionTitleCompact {',
+          'padding: 8px 10px;',
+          'background: #f8fafc;',
+          'border-bottom: 1px solid #e2e8f0;',
+          'font-size: 0.92rem;',
+          'font-weight: 950;',
+          'color: #0f172a;',
+        '}',
+
+        '.confirmGridCompact {',
+          'display: grid;',
+          'grid-template-columns: repeat(2, minmax(0, 1fr));',
+          'gap: 7px;',
+          'padding: 10px;',
+        '}',
+
+        '.confirmItemCompact {',
+          'border: 1px solid #e2e8f0;',
+          'border-radius: 12px;',
+          'background: #ffffff;',
+          'padding: 7px 8px;',
+          'min-width: 0;',
+        '}',
+
+        '.confirmItemLabel {',
+          'font-size: 0.68rem;',
+          'font-weight: 900;',
+          'color: #64748b;',
+          'line-height: 1.15;',
+          'margin-bottom: 2px;',
+        '}',
+
+        '.confirmItemValue {',
+          'font-size: 0.86rem;',
+          'font-weight: 850;',
+          'line-height: 1.22;',
+          'color: #0f172a;',
+          'word-break: break-word;',
+        '}',
+
+        '.confirmVehicleListCompact {',
+          'margin-top: 10px;',
+        '}',
+
+        '.confirmVehicleSectionTitle {',
+          'font-size: 0.96rem;',
+          'font-weight: 950;',
+          'margin: 0 0 7px;',
+          'color: #0f172a;',
+        '}',
+
+        '.confirmVehicleCardCompact {',
+          'border: 1px solid #dbe3ef;',
+          'border-radius: 16px;',
+          'background: #ffffff;',
+          'overflow: hidden;',
+          'margin-top: 8px;',
+          'box-shadow: 0 5px 14px rgba(15, 23, 42, 0.05);',
+        '}',
+
+        '.confirmVehicleHeadCompact {',
+          'display: flex;',
+          'align-items: center;',
+          'justify-content: space-between;',
+          'gap: 8px;',
+          'padding: 8px 10px;',
+          'background: #0f172a;',
+          'color: #ffffff;',
+        '}',
+
+        '.confirmVehicleTitleCompact {',
+          'font-size: 0.9rem;',
+          'font-weight: 950;',
+          'white-space: nowrap;',
+        '}',
+
+        '.confirmVehiclePlateMini {',
+          'font-size: 0.78rem;',
+          'font-weight: 900;',
+          'background: #ffffff;',
+          'color: #0f172a;',
+          'border-radius: 999px;',
+          'padding: 3px 8px;',
+          'white-space: nowrap;',
+          'max-width: 60%;',
+          'overflow: hidden;',
+          'text-overflow: ellipsis;',
+        '}',
+
+        '.confirmPlateCompact {',
+          'width: min(260px, calc(100% - 20px));',
+          'margin: 10px auto 0;',
+          'border: 3px solid #0f172a;',
+          'border-radius: 14px;',
+          'text-align: center;',
+          'background: #ffffff;',
+          'overflow: hidden;',
+        '}',
+
+        '.confirmPlateNoCompact {',
+          'font-size: 1.7rem;',
+          'font-weight: 950;',
+          'letter-spacing: 1px;',
+          'line-height: 1.1;',
+          'padding: 8px 8px 5px;',
+        '}',
+
+        '.confirmPlateProvinceCompact {',
+          'border-top: 2px solid #0f172a;',
+          'padding: 5px 8px;',
+          'font-size: 0.9rem;',
+          'font-weight: 950;',
+          'line-height: 1.1;',
+        '}',
+
+        '@media (max-width: 640px) {',
+          '.vehicleConfirmPopupCompact {',
+            'width: calc(100% - 12px) !important;',
+            'max-width: calc(100% - 12px) !important;',
+            'border-radius: 18px !important;',
+          '}',
+
+          '.confirmHeaderCompact {',
+            'padding: 9px 10px;',
+          '}',
+
+          '.confirmHeaderCompact h3 {',
+            'font-size: 0.94rem;',
+          '}',
+
+          '.confirmHeaderCompact p {',
+            'font-size: 0.7rem;',
+          '}',
+
+          '.confirmCountBadge {',
+            'font-size: 0.68rem;',
+            'padding: 4px 8px;',
+          '}',
+
+          '.confirmBodyCompact {',
+            'padding: 8px 8px 0;',
+          '}',
+
+          '.confirmSectionTitleCompact {',
+            'padding: 7px 8px;',
+            'font-size: 0.82rem;',
+          '}',
+
+          '.confirmGridCompact {',
+            'grid-template-columns: repeat(2, minmax(0, 1fr));',
+            'gap: 5px;',
+            'padding: 7px;',
+          '}',
+
+          '.confirmItemCompact {',
+            'padding: 5px 6px;',
+            'border-radius: 10px;',
+          '}',
+
+          '.confirmItemLabel {',
+            'font-size: 0.58rem;',
+            'margin-bottom: 1px;',
+          '}',
+
+          '.confirmItemValue {',
+            'font-size: 0.74rem;',
+            'line-height: 1.16;',
+          '}',
+
+          '.confirmVehicleListCompact {',
+            'margin-top: 8px;',
+          '}',
+
+          '.confirmVehicleSectionTitle {',
+            'font-size: 0.84rem;',
+            'margin-bottom: 5px;',
+          '}',
+
+          '.confirmVehicleCardCompact {',
+            'border-radius: 13px;',
+            'margin-top: 6px;',
+          '}',
+
+          '.confirmVehicleHeadCompact {',
+            'padding: 6px 8px;',
+          '}',
+
+          '.confirmVehicleTitleCompact {',
+            'font-size: 0.78rem;',
+          '}',
+
+          '.confirmVehiclePlateMini {',
+            'font-size: 0.66rem;',
+            'padding: 3px 7px;',
+          '}',
+
+          '.confirmPlateCompact {',
+            'width: min(210px, calc(100% - 18px));',
+            'margin-top: 7px;',
+            'border-radius: 12px;',
+          '}',
+
+          '.confirmPlateNoCompact {',
+            'font-size: 1.28rem;',
+            'padding: 6px 6px 4px;',
+          '}',
+
+          '.confirmPlateProvinceCompact {',
+            'font-size: 0.74rem;',
+            'padding: 4px 6px;',
+          '}',
+
+          '.vehicleConfirmActions {',
+            'grid-template-columns: 1fr 1fr !important;',
+            'gap: 7px !important;',
+            'margin: 8px 0 10px !important;',
+            'padding: 0 8px !important;',
+          '}',
+
+          '.vehicleConfirmBtnCompact, .vehicleCancelBtnCompact {',
+            'padding: 9px 8px !important;',
+            'border-radius: 12px !important;',
+            'font-size: 0.82rem !important;',
+          '}',
+        '}',
+
+        '@media (max-width: 380px) {',
+          '.confirmItemLabel { font-size: 0.54rem !important; }',
+          '.confirmItemValue { font-size: 0.68rem !important; }',
+          '.confirmHeaderCompact h3 { font-size: 0.88rem !important; }',
+          '.confirmCountBadge { font-size: 0.62rem !important; }',
+        '}',
+      '</style>',
+
+      '<div class="confirmHeaderCompact">',
+        '<div class="confirmHeaderLeft">',
+          '<h3>ตรวจสอบข้อมูลก่อนบันทึก</h3>',
+          '<p>กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนยืนยัน</p>',
         '</div>',
+        '<div class="confirmCountBadge">', escapeHtml(vehicles.length), ' คัน</div>',
       '</div>',
 
-      '<div class="confirmVehicleList">',
-        vehicleHtml,
+      '<div class="confirmBodyCompact">',
+
+        '<section class="confirmSectionBoxCompact">',
+          '<div class="confirmSectionTitleCompact">ข้อมูลผู้ลงทะเบียน</div>',
+          '<div class="confirmGridCompact">',
+            confirmItemHtml("DC", person.dc),
+            confirmItemHtml("รหัสพนักงาน", person.employeeId),
+            confirmItemHtml("ชื่อ-นามสกุล", person.fullName),
+            confirmItemHtml("เบอร์โทร", person.phone),
+            confirmItemHtml("แผนก", person.department),
+            confirmItemHtml("บริษัท", person.company),
+          '</div>',
+        '</section>',
+
+        '<div class="confirmVehicleListCompact">',
+          '<div class="confirmVehicleSectionTitle">รายละเอียดรถ</div>',
+          vehicleHtml || '<div class="confirmItemCompact">ไม่พบข้อมูลรถ</div>',
+        '</div>',
+
       '</div>',
+
     '</div>'
   ].join("");
 }
 
 
-function detailRowHtml(label, value) {
+function confirmItemHtml(label, value) {
   return [
-    '<div class="vehicleDetailLabel">', escapeHtml(label), '</div>',
-    '<div class="vehicleDetailValue">', escapeHtml(value || "-"), '</div>'
+    '<div class="confirmItemCompact">',
+      '<div class="confirmItemLabel">', escapeHtml(label), '</div>',
+      '<div class="confirmItemValue">', escapeHtml(value || "-"), '</div>',
+    '</div>'
   ].join("");
 }
+
+
+/*
+ * เก็บฟังก์ชันนี้ไว้เพื่อไม่ให้ส่วนอื่นที่ยังเรียก detailRowHtml พัง
+ * แต่เปลี่ยนให้ใช้รูปแบบ compact เดียวกัน
+ */
+function detailRowHtml(label, value) {
+  return confirmItemHtml(label, value);
+}
+
 
 
 // async function showSaveSuccess(result) {
