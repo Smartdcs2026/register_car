@@ -2,7 +2,7 @@
   "name": "ระบบลงทะเบียนรถยนต์ / รถจักรยานยนต์",
   "short_name": "Register Car",
   "description": "ระบบลงทะเบียนรถยนต์และรถจักรยานยนต์",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
