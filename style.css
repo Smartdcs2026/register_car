@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap");
 /************************************************************
  * Vehicle Registration System
  * style.css v4
@@ -17,16 +18,16 @@
   color-scheme: light;
 
   --font-main:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    "Noto Sans Thai",
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
+  "Kanit",
+  ui-sans-serif,
+  system-ui,
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  "Noto Sans Thai",
+  "Helvetica Neue",
+  Arial,
+  sans-serif;
 
   --page-bg: #eef3f8;
   --page-bg-2: #f8fafc;
@@ -140,7 +141,54 @@ img {
   background: rgba(37, 99, 235, 0.18);
 }
 
+/* ==========================================================
+   GLOBAL FONT - KANIT
+   บังคับใช้ฟอนต์ Kanit ทุกจุดของระบบ
+========================================================== */
 
+html,
+body,
+button,
+input,
+select,
+textarea,
+option,
+label,
+table,
+th,
+td,
+a,
+span,
+div,
+p,
+small,
+strong,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-main) !important;
+}
+
+.swal2-popup,
+.swal2-title,
+.swal2-html-container,
+.swal2-actions,
+.swal2-confirm,
+.swal2-cancel,
+.swal2-deny,
+.swal2-input,
+.swal2-select,
+.swal2-textarea,
+.swal2-validation-message {
+  font-family: var(--font-main) !important;
+}
+
+::placeholder {
+  font-family: var(--font-main) !important;
+}
 /* ==========================================================
    PAGE LAYOUT
 ========================================================== */
