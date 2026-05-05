@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap");
 /************************************************************
  * Vehicle Registration System
  * style.css v4
@@ -7,6 +7,7 @@
  * - Modern clean glass/card layout
  * - Compact responsive mobile layout
  * - Preserves existing class names and app.js behavior
+ * - Font changed from Kanit to Noto Sans Thai for better readability
  ************************************************************/
 
 
@@ -18,16 +19,15 @@
   color-scheme: light;
 
   --font-main:
-  "Kanit",
-  ui-sans-serif,
-  system-ui,
-  -apple-system,
-  BlinkMacSystemFont,
-  "Segoe UI",
-  "Noto Sans Thai",
-  "Helvetica Neue",
-  Arial,
-  sans-serif;
+    "Noto Sans Thai",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
 
   --page-bg: #eef3f8;
   --page-bg-2: #f8fafc;
@@ -106,11 +106,15 @@ body {
   min-height: 100vh;
   margin: 0;
   font-family: var(--font-main);
+  font-weight: 400;
   color: var(--text-main);
   background:
     radial-gradient(circle at 8% 0%, rgba(37, 99, 235, 0.14), transparent 34rem),
     radial-gradient(circle at 95% 12%, rgba(15, 23, 42, 0.10), transparent 28rem),
     linear-gradient(180deg, #f8fafc 0%, var(--page-bg) 100%);
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -142,8 +146,8 @@ img {
 }
 
 /* ==========================================================
-   GLOBAL FONT - KANIT
-   บังคับใช้ฟอนต์ Kanit ทุกจุดของระบบ
+   GLOBAL FONT - NOTO SANS THAI
+   บังคับใช้ฟอนต์ Noto Sans Thai ทุกจุดของระบบ
 ========================================================== */
 
 html,
@@ -189,6 +193,7 @@ h6 {
 ::placeholder {
   font-family: var(--font-main) !important;
 }
+
 /* ==========================================================
    PAGE LAYOUT
 ========================================================== */
@@ -247,16 +252,16 @@ h6 {
   margin: 0;
   color: var(--text-strong);
   font-size: clamp(1.08rem, 2.2vw, 1.48rem);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.2;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.025em;
 }
 
 .brandText p {
   margin: 4px 0 0;
   color: var(--text-muted);
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .apiStatusBox {
@@ -270,7 +275,7 @@ h6 {
   background: var(--surface-soft);
   color: var(--text-muted);
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -313,7 +318,7 @@ h6 {
   margin-top: 16px;
   color: var(--text-muted);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 
@@ -372,9 +377,9 @@ h6 {
   color: var(--text-strong);
   text-align: center;
   font-size: clamp(1.28rem, 4vw, 1.95rem);
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1.18;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.025em;
 }
 
 .consentSubtitle {
@@ -382,7 +387,7 @@ h6 {
   color: var(--text-muted);
   text-align: center;
   font-size: 0.98rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .consentTextBox {
@@ -394,7 +399,8 @@ h6 {
   background: #ffffff;
   color: #334155;
   font-size: 0.92rem;
-  line-height: 1.68;
+  font-weight: 400;
+  line-height: 1.72;
   box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.03);
 }
 
@@ -427,8 +433,8 @@ h6 {
   border-radius: 18px;
   background: var(--accent-soft);
   color: var(--text-main);
-  font-weight: 850;
-  line-height: 1.48;
+  font-weight: 700;
+  line-height: 1.55;
   cursor: pointer;
 }
 
@@ -455,7 +461,7 @@ h6 {
   color: var(--text-muted);
   text-align: center;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 
@@ -496,9 +502,9 @@ h6 {
   margin: 0;
   color: var(--text-strong);
   font-size: 1.02rem;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1.25;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.012em;
 }
 
 .sectionHeader h2::before {
@@ -513,7 +519,7 @@ h6 {
   margin: 6px 0 0 16px;
   color: var(--text-muted);
   font-size: 0.9rem;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.48;
 }
 
@@ -544,8 +550,8 @@ label {
   margin-bottom: 7px;
   color: #334155;
   font-size: 0.86rem;
-  font-weight: 900;
-  line-height: 1.2;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .required {
@@ -562,6 +568,7 @@ select {
   background: #ffffff;
   color: var(--text-main);
   outline: none;
+  font-weight: 400;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
   transition:
     border-color var(--transition),
@@ -610,8 +617,8 @@ select:disabled {
   margin-top: 6px;
   color: var(--text-muted);
   font-size: 0.74rem;
-  font-weight: 650;
-  line-height: 1.35;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .invalidField {
@@ -638,7 +645,7 @@ select:disabled {
   padding: 10px 16px;
   border: 1px solid transparent;
   border-radius: 14px;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.1;
   text-decoration: none;
   user-select: none;
@@ -787,15 +794,15 @@ select:disabled {
   margin: 0;
   color: var(--text-strong);
   font-size: 1.04rem;
-  font-weight: 950;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  letter-spacing: -0.012em;
 }
 
 .vehicleCardSubtitle {
   margin: 5px 0 0;
   color: var(--text-muted);
   font-size: 0.84rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .vehicleGrid {
@@ -829,14 +836,14 @@ select:disabled {
   margin: 0;
   color: var(--text-strong);
   font-size: 0.96rem;
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .subSectionHeader p {
   margin: 4px 0 0;
   color: var(--text-muted);
   font-size: 0.8rem;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.42;
 }
 
@@ -905,7 +912,7 @@ select:disabled {
   color: var(--text-muted);
   text-align: center;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .imageControls {
@@ -920,7 +927,7 @@ select:disabled {
   display: block;
   color: var(--text-strong);
   font-size: 0.95rem;
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .imageTitle small {
@@ -928,7 +935,7 @@ select:disabled {
   margin-top: 4px;
   color: var(--text-muted);
   font-size: 0.78rem;
-  font-weight: 650;
+  font-weight: 500;
   word-break: break-word;
 }
 
@@ -992,7 +999,7 @@ select:disabled {
   margin: 0;
   color: var(--text-strong);
   font-size: 1rem;
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .iconButton {
@@ -1066,7 +1073,7 @@ select:disabled {
 .saveSuccessConfirmBtn {
   border: 0 !important;
   border-radius: 14px !important;
-  font-weight: 950 !important;
+  font-weight: 800 !important;
   cursor: pointer !important;
 }
 
@@ -1093,7 +1100,7 @@ select:disabled {
   color: var(--text-strong);
   text-align: center;
   font-size: 1.06rem;
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .confirmPersonBox {
@@ -1126,7 +1133,7 @@ select:disabled {
   padding: 11px 13px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-soft);
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .platePreview {
@@ -1145,7 +1152,7 @@ select:disabled {
 .plateNumberPreview {
   color: #111827;
   font-size: clamp(2rem, 9vw, 3.15rem);
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1.04;
   letter-spacing: 0.04em;
   word-break: break-word;
@@ -1157,7 +1164,7 @@ select:disabled {
   border-top: 2px solid #111827;
   color: #111827;
   font-size: clamp(1rem, 4.4vw, 1.38rem);
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -1175,13 +1182,13 @@ select:disabled {
 .vehicleDetailLabel {
   color: var(--text-muted);
   font-size: 0.86rem;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .vehicleDetailValue {
   color: var(--text-main);
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 700;
   word-break: break-word;
 }
 
@@ -1206,7 +1213,7 @@ select:disabled {
 .saveResultSummary h4 {
   margin: 0 0 8px;
   color: #166534;
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .saveVehicleResultList {
@@ -1226,7 +1233,7 @@ select:disabled {
   padding: 11px 13px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-soft);
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .saveVehicleResultBody {
@@ -1243,13 +1250,13 @@ select:disabled {
   background: #111827;
   color: #ffffff;
   font-size: 1.04rem;
-  font-weight: 950;
+  font-weight: 800;
   letter-spacing: 0.16em;
 }
 
 .resultLink {
   color: var(--accent);
-  font-weight: 850;
+  font-weight: 700;
   word-break: break-all;
 }
 
@@ -1281,7 +1288,7 @@ select:disabled {
 .publicVehicleCard h1 {
   margin: 0;
   font-size: clamp(1.25rem, 4vw, 1.75rem);
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .pinAccessCard p,
@@ -1301,7 +1308,7 @@ select:disabled {
   max-width: 220px;
   text-align: center;
   font-size: 1.15rem;
-  font-weight: 950;
+  font-weight: 800;
   letter-spacing: 0.14em;
 }
 
@@ -1314,7 +1321,7 @@ select:disabled {
   background: var(--success-soft);
   color: #166534;
   font-size: 0.84rem;
-  font-weight: 950;
+  font-weight: 800;
 }
 
 .publicVehicleStatus.inactive {
@@ -1360,7 +1367,7 @@ select:disabled {
 
 .loadingText {
   color: var(--text-main);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 @keyframes spin {
@@ -1682,10 +1689,6 @@ select:disabled {
 }
 
 
-
-
-
-
 /* ==========================================================
    MOBILE 2-COLUMN FORM OVERRIDE
    แสดงฟอร์มมือถือแถวละ 2 ช่อง เพื่อใช้พื้นที่คุ้มขึ้น
@@ -1714,7 +1717,7 @@ select:disabled {
   label {
     margin-bottom: 5px;
     font-size: 0.74rem;
-    line-height: 1.15;
+    line-height: 1.2;
   }
 
   input,
@@ -1735,7 +1738,7 @@ select:disabled {
   .fieldHint {
     margin-top: 4px;
     font-size: 0.64rem;
-    line-height: 1.25;
+    line-height: 1.28;
   }
 
   .otherInput {
@@ -1811,13 +1814,14 @@ select:disabled {
 
   .fieldHint {
     font-size: 0.58rem;
-    line-height: 1.2;
+    line-height: 1.22;
   }
 
   .formSection {
     padding: 10px 7px;
   }
 }
+
 /* ==========================================================
    CAMERA MOBILE / iPHONE SAFE
 ========================================================== */
